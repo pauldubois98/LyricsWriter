@@ -2,6 +2,8 @@
 
 A clean, modern web tool for writing music lyrics with real-time phonetic transcription and intelligent rhyme detection.
 
+**Try it live:** https://pauldubois98.github.io/LyricsWriter/
+
 ![Vanilla JS](https://img.shields.io/badge/Vanilla-JavaScript-yellow)
 ![No Dependencies](https://img.shields.io/badge/Dependencies-None-green)
 ![Offline](https://img.shields.io/badge/Works-Offline-blue)
