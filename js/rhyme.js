@@ -11,6 +11,7 @@ const RhymeDetector = (() => {
       .replace(/v/g, 'f')
       .replace(/ð/g, 'θ')
       .replace(/ʒ/g, 'ʃ')
+      .replace(/ə$/, '')  // strip trailing schwa (French mute-e) — rhymes match on sounds before it
       .trim();
   }
 

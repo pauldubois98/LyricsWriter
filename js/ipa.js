@@ -653,6 +653,13 @@ const IpaConverter = (() => {
         continue;
       }
 
+      // oin/oins (nasal): loin, moins, coin, point, témoins
+      if (remaining.startsWith('oin') && (isLast(i + 3) || !isVowel(w[i + 3]))) {
+        result += 'wɛ̃';
+        i += 3;
+        continue;
+      }
+
       // oi / ois / oit / oix
       if (remaining.startsWith('oi')) {
         result += 'wa';
@@ -975,8 +982,16 @@ const IpaConverter = (() => {
           i = w.length;
           continue;
         }
-        // é
-        result += 'ə';
+        // 'e' in closed syllable (before final consonant(s)): ɛ
+        // e.g. "secret" → /səkʁɛ/, "inquiet" → /ɛ̃kjɛ/, "cher" → /ʃɛʁ/
+        // 'e' in open syllable or mid-word before single consonant + vowel: ə
+        const restAfterE = w.substring(i + 1);
+        const allConsonants = [...restAfterE].every(ch => !isVowel(ch));
+        if (restAfterE.length > 0 && allConsonants) {
+          result += 'ɛ';
+        } else {
+          result += 'ə';
+        }
         i += 1;
         continue;
       }
