@@ -1520,6 +1520,209 @@ const IpaConverter = (() => {
     return result;
   }
 
+  // Rule-based Spanish pronunciation
+  function spanishToIpa(word) {
+    let w = word.toLowerCase().trim();
+    if (!w) return '';
+
+    const VOWELS = 'aeiouáéíóúü';
+    function isVowel(ch) { return VOWELS.includes(ch); }
+
+    let result = '';
+    let i = 0;
+
+    while (i < w.length) {
+      const c = w[i];
+      const next = w[i + 1] || '';
+      const next2 = w[i + 2] || '';
+      const remaining = w.substring(i);
+      const prevChar = i > 0 ? w[i - 1] : '';
+
+      // Digraphs
+      if (remaining.startsWith('ch')) { result += 'tʃ'; i += 2; continue; }
+      if (remaining.startsWith('ll')) { result += 'ʝ'; i += 2; continue; }
+      if (remaining.startsWith('rr')) { result += 'r'; i += 2; continue; }
+      if (remaining.startsWith('qu')) {
+        if (next2 === 'e' || next2 === 'i') { result += 'k'; i += 2; continue; }
+        result += 'kw'; i += 2; continue;
+      }
+      if (remaining.startsWith('gu')) {
+        if (next2 === 'e' || next2 === 'i') { result += 'ɡ'; i += 2; continue; }
+      }
+
+      // Consonants
+      if (c === 'ñ') { result += 'ɲ'; i++; continue; }
+      if (c === 'c') {
+        if (next === 'e' || next === 'i' || next === 'é' || next === 'í') { result += 's'; }
+        else { result += 'k'; }
+        i++; continue;
+      }
+      if (c === 'g') {
+        if (next === 'e' || next === 'i' || next === 'é' || next === 'í') { result += 'x'; }
+        else { result += 'ɡ'; }
+        i++; continue;
+      }
+      if (c === 'j') { result += 'x'; i++; continue; }
+      if (c === 'h') { i++; continue; } // silent
+      if (c === 'v') { result += 'b'; i++; continue; }
+      if (c === 'z') { result += 's'; i++; continue; } // Latin American
+      if (c === 'x') { result += 'ks'; i++; continue; }
+      if (c === 'r') {
+        if (i === 0 || prevChar === 'n' || prevChar === 'l' || prevChar === 's') {
+          result += 'r'; // trilled
+        } else {
+          result += 'ɾ'; // flap
+        }
+        i++; continue;
+      }
+      if (c === 'y') {
+        if (i === w.length - 1) { result += 'i'; }
+        else { result += 'ʝ'; }
+        i++; continue;
+      }
+      if (c === 'b' || c === 'd') {
+        // Approximant between vowels
+        if (i > 0 && isVowel(prevChar)) {
+          result += c === 'b' ? 'β' : 'ð';
+        } else {
+          result += c;
+        }
+        i++; continue;
+      }
+
+      // Vowels
+      if (c === 'a' || c === 'á') { result += 'a'; i++; continue; }
+      if (c === 'e' || c === 'é') { result += 'e'; i++; continue; }
+      if (c === 'i' || c === 'í') { result += 'i'; i++; continue; }
+      if (c === 'o' || c === 'ó') { result += 'o'; i++; continue; }
+      if (c === 'u' || c === 'ú') { result += 'u'; i++; continue; }
+      if (c === 'ü') { result += 'w'; i++; continue; }
+
+      // Simple consonants
+      const sMap = { b: 'b', d: 'd', f: 'f', k: 'k', l: 'l', m: 'm',
+        n: 'n', p: 'p', s: 's', t: 't', w: 'w' };
+      if (sMap[c]) { result += sMap[c]; i++; continue; }
+
+      result += c; i++;
+    }
+    return result;
+  }
+
+  // Rule-based Italian pronunciation
+  function italianToIpa(word) {
+    let w = word.toLowerCase().trim();
+    if (!w) return '';
+
+    const VOWELS = 'aeiouàèéìòóù';
+    function isVowel(ch) { return VOWELS.includes(ch); }
+
+    let result = '';
+    let i = 0;
+
+    while (i < w.length) {
+      const c = w[i];
+      const next = w[i + 1] || '';
+      const next2 = w[i + 2] || '';
+      const remaining = w.substring(i);
+
+      // Multi-char patterns
+      if (remaining.startsWith('sch')) { result += 'sk'; i += 3; continue; }
+      if (remaining.startsWith('sci')) {
+        if (next2 === 'i' && w[i + 3] && isVowel(w[i + 3])) {
+          result += 'ʃ'; i += 3; continue; // "sci" before vowel
+        }
+        result += 'ʃi'; i += 3; continue;
+      }
+      if (remaining.startsWith('sce')) { result += 'ʃe'; i += 3; continue; }
+      if (remaining.startsWith('sc')) {
+        if (next2 === 'e' || next2 === 'i' || next2 === 'é' || next2 === 'è' || next2 === 'ì') {
+          result += 'ʃ'; i += 2; continue;
+        }
+        result += 'sk'; i += 2; continue;
+      }
+      if (remaining.startsWith('gli')) {
+        if (i + 3 >= w.length || isVowel(w[i + 3])) {
+          result += 'ʎ'; i += 3; continue;
+        }
+        result += 'ɡli'; i += 3; continue;
+      }
+      if (remaining.startsWith('gn')) { result += 'ɲ'; i += 2; continue; }
+      if (remaining.startsWith('gh')) { result += 'ɡ'; i += 2; continue; }
+      if (remaining.startsWith('ch')) { result += 'k'; i += 2; continue; }
+      if (remaining.startsWith('ci')) {
+        if (w[i + 2] && isVowel(w[i + 2])) {
+          result += 'tʃ'; i += 2; continue; // "ci" + vowel, i is silent
+        }
+      }
+      if (remaining.startsWith('ce')) { result += 'tʃe'; i += 2; continue; }
+      if (remaining.startsWith('gi')) {
+        if (w[i + 2] && isVowel(w[i + 2])) {
+          result += 'dʒ'; i += 2; continue;
+        }
+      }
+      if (remaining.startsWith('ge')) { result += 'dʒe'; i += 2; continue; }
+      if (remaining.startsWith('qu')) { result += 'kw'; i += 2; continue; }
+      if (remaining.startsWith('zz')) {
+        result += 'tts'; i += 2; continue;
+      }
+
+      // Doubled consonants
+      if (next === c && 'bcdfglmnprst'.includes(c)) {
+        result += c === 'c' ? 'kk' : c + c;
+        // will be simplified below actually, let's just output the consonant mapping twice
+        // Actually just skip the double and let the single handle it
+        i++; continue;
+      }
+
+      // Single consonants
+      if (c === 'c') {
+        if (next === 'e' || next === 'i' || next === 'è' || next === 'é' || next === 'ì') {
+          result += 'tʃ';
+        } else {
+          result += 'k';
+        }
+        i++; continue;
+      }
+      if (c === 'g') {
+        if (next === 'e' || next === 'i' || next === 'è' || next === 'é' || next === 'ì') {
+          result += 'dʒ';
+        } else {
+          result += 'ɡ';
+        }
+        i++; continue;
+      }
+      if (c === 'h') { i++; continue; } // silent
+      if (c === 's') {
+        // s between vowels = z
+        if (i > 0 && isVowel(w[i - 1]) && next && isVowel(next)) {
+          result += 'z';
+        } else {
+          result += 's';
+        }
+        i++; continue;
+      }
+      if (c === 'z') { result += 'ts'; i++; continue; }
+      if (c === 'r') { result += 'ɾ'; i++; continue; }
+      if (c === 'j') { result += 'j'; i++; continue; }
+
+      // Vowels
+      if (c === 'a' || c === 'à') { result += 'a'; i++; continue; }
+      if (c === 'e' || c === 'é') { result += 'e'; i++; continue; }
+      if (c === 'è') { result += 'ɛ'; i++; continue; }
+      if (c === 'i' || c === 'ì') { result += 'i'; i++; continue; }
+      if (c === 'o' || c === 'ó') { result += 'o'; i++; continue; }
+      if (c === 'ò') { result += 'ɔ'; i++; continue; }
+      if (c === 'u' || c === 'ù') { result += 'u'; i++; continue; }
+
+      const sMap = { b: 'b', d: 'd', f: 'f', k: 'k', l: 'l', m: 'm',
+        n: 'n', p: 'p', t: 't', v: 'v', w: 'w', x: 'ks', y: 'i' };
+      if (sMap[c]) { result += sMap[c]; i++; continue; }
+
+      result += c; i++;
+    }
+    return result;
+  }
+
   // Classical Latin pronunciation rules
   function latinToIpa(word) {
     const w = word.toLowerCase().trim();
@@ -1566,18 +1769,19 @@ const IpaConverter = (() => {
       const clean = word.replace(/[^\p{L}\p{M}'-]/gu, '').toLowerCase();
       if (!clean) continue;
 
-      let ipa;
-      if (lang === 'la') {
-        ipa = latinToIpa(clean);
-      } else {
-        ipa = await fetchIpaFromAPI(lang, clean);
-        // Rule-based fallbacks
-        if (!ipa && lang === 'fr') {
-          ipa = frenchToIpa(clean);
-        }
-        if (!ipa && lang === 'en') {
-          ipa = englishToIpa(clean);
-        }
+      // Lookup: fallback dictionary first, then rule-based converter
+      // (API removed — unreliable CORS, and all languages now have rule-based fallbacks)
+      let ipa = lookupFallback(lang, clean);
+      if (!ipa) {
+        const converters = {
+          en: englishToIpa,
+          fr: frenchToIpa,
+          es: spanishToIpa,
+          it: italianToIpa,
+          la: latinToIpa,
+        };
+        const convert = converters[lang];
+        if (convert) ipa = convert(clean);
       }
 
       if (ipa) {
