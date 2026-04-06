@@ -111,6 +111,23 @@ body {
   color: var(--text-muted);
 }
 
+.syllable-count {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: var(--bg);
+  border-radius: 999px;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.syllable-count:empty {
+  display: none;
+}
+
 .delete-btn {
   background: none;
   border: none;

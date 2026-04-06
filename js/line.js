@@ -69,10 +69,15 @@ const LineManager = (() => {
     const ipaDisplay = document.createElement('div');
     ipaDisplay.className = 'ipa-display';
 
+    // Syllable count
+    const syllableCount = document.createElement('span');
+    syllableCount.className = 'syllable-count';
+
     const inputRow = document.createElement('div');
     inputRow.className = 'input-row';
     inputRow.appendChild(langSelect);
     inputRow.appendChild(input);
+    inputRow.appendChild(syllableCount);
     inputRow.appendChild(deleteBtn);
 
     wrapper.appendChild(inputRow);
@@ -80,6 +85,7 @@ const LineManager = (() => {
 
     lineData.el = wrapper;
     lineData.ipaDisplay = ipaDisplay;
+    lineData.syllableCount = syllableCount;
     lineData.input = input;
     lineData.langSelect = langSelect;
 
@@ -129,6 +135,7 @@ const LineManager = (() => {
       line.ipa = '';
       line.ipaWords = [];
       line.ipaDisplay.innerHTML = '';
+      line.syllableCount.textContent = '';
       App.updateRhymes();
       return;
     }
@@ -192,6 +199,32 @@ const LineManager = (() => {
     });
 
     line.ipaDisplay.innerHTML = html;
+
+    const syllables = countSyllables(fullIpa);
+    line.syllableCount.textContent = syllables;
+    line.syllableCount.title = syllables + ' syllable' + (syllables !== 1 ? 's' : '');
+  }
+
+  const IPA_VOWELS = new Set([
+    'a', 'e', 'i', 'o', 'u',
+    '\u025B', '\u0254', '\u026A', '\u028A', '\u028C', '\u00E6', '\u0251', '\u0259',
+    '\u025D', '\u025A', '\u00F8', '\u0153', 'y', '\u0275', '\u0250',
+    '\u0252', '\u026F', '\u0264', '\u025E', '\u025C', '\u0268', '\u0289',
+  ]);
+
+  function countSyllables(ipaStr) {
+    if (!ipaStr) return 0;
+    let count = 0;
+    let inVowel = false;
+    for (const ch of ipaStr) {
+      if (IPA_VOWELS.has(ch)) {
+        if (!inVowel) count++;
+        inVowel = true;
+      } else {
+        inVowel = false;
+      }
+    }
+    return count;
   }
 
   function escapeHtml(str) {
