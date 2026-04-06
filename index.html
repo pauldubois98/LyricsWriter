@@ -8,10 +8,15 @@
 </head>
 <body>
   <header class="app-header">
-    <h1>Lyrics Maker</h1>
+    <div class="header-row">
+      <h1>Lyrics Maker</h1>
+    </div>
     <p>Write lyrics, see phonetics, find rhymes</p>
+    <div class="history-buttons">
+      <button id="undo-btn" class="history-btn" disabled title="Undo (Ctrl+Z)">&#x21A9;</button>
+      <button id="redo-btn" class="history-btn" disabled title="Redo (Ctrl+Shift+Z)">&#x21AA;</button>
+    </div>
   </header>
-
   <main class="app-container">
     <div id="lines-container"></div>
     <button id="add-line-btn" class="add-line-btn">+ Add line</button>

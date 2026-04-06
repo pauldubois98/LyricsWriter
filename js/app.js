@@ -27,6 +27,9 @@ const App = (() => {
       saveState();
     });
 
+    document.getElementById('undo-btn').addEventListener('click', undo);
+    document.getElementById('redo-btn').addEventListener('click', redo);
+
     document.addEventListener('keydown', (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
@@ -39,10 +42,16 @@ const App = (() => {
     });
   }
 
+  function updateHistoryButtons() {
+    document.getElementById('undo-btn').disabled = undoStack.length === 0;
+    document.getElementById('redo-btn').disabled = redoStack.length === 0;
+  }
+
   function pushUndo() {
     undoStack.push(LineManager.getSnapshot());
     if (undoStack.length > MAX_UNDO) undoStack.shift();
     redoStack.length = 0;
+    updateHistoryButtons();
   }
 
   // Debounced pushUndo for text input — groups rapid keystrokes into one undo step
@@ -64,6 +73,7 @@ const App = (() => {
     LineManager.restoreSnapshot(snapshot);
     updateRhymes();
     saveState();
+    updateHistoryButtons();
   }
 
   function redo() {
@@ -74,6 +84,7 @@ const App = (() => {
     LineManager.restoreSnapshot(snapshot);
     updateRhymes();
     saveState();
+    updateHistoryButtons();
   }
 
   function addLine() {
