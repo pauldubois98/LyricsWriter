@@ -38,7 +38,7 @@ body {
 }
 
 .app-logo {
-  height: 8rem;
+  height: 20rem;
   width: auto;
 }
 
@@ -183,10 +183,12 @@ body {
   border-radius: 999px;
   min-width: 1.5rem;
   height: 1.5rem;
+  padding: 0 0.4rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .syllable-count:empty {
