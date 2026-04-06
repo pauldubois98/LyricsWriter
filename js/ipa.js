@@ -953,14 +953,15 @@ const IpaConverter = (() => {
         continue;
       }
       if (c === 'e') {
-        // final e is usually silent
-        if (isLast(i + 1)) {
-          // silent schwa at end (unless it's the only vowel)
+        // final "e" or "es" or "ent" is usually silent
+        if ((isLast(i + 1)) ||
+            (next === 's' && isLast(i + 2)) ||
+            (remaining === 'ent' && w.length > 3)) {
           const hasOtherVowel = [...w.substring(0, i)].some(ch => isVowel(ch));
           if (!hasOtherVowel) {
             result += 'ə';
           }
-          i += 1;
+          i = w.length; // skip to end
           continue;
         }
         // é
