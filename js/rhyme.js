@@ -80,7 +80,7 @@ const RhymeDetector = (() => {
 
     for (let i = 0; i < lines.length; i++) {
       if (!cleaned[i]) continue;
-      for (let j = i + 1; j < lines.length; j++) {
+      for (let j = i + 1; j < lines.length && j - i <= 3; j++) {
         if (!cleaned[j]) continue;
         const len = longestCommonSuffix(cleaned[i], cleaned[j]);
         if (len >= 1) {
