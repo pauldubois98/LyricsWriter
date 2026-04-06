@@ -30,6 +30,8 @@ const App = (() => {
     document.getElementById('undo-btn').addEventListener('click', undo);
     document.getElementById('redo-btn').addEventListener('click', redo);
 
+    document.getElementById('clear-btn').addEventListener('click', clearAll);
+
     // About modal
     const aboutModal = document.getElementById('about-modal');
     document.getElementById('about-btn').addEventListener('click', () => {
@@ -101,6 +103,17 @@ const App = (() => {
     updateRhymes();
     saveState();
     updateHistoryButtons();
+  }
+
+  function clearAll() {
+    const lines = LineManager.getLines();
+    if (lines.length === 0 || (lines.length === 1 && !lines[0].text)) return;
+    if (!confirm('Delete all lines?')) return;
+    pushUndo();
+    lineCount = 0;
+    LineManager.restoreSnapshot([]);
+    for (let i = 0; i < 4; i++) addLine();
+    saveState();
   }
 
   function addLine() {
