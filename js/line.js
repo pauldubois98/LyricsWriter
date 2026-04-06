@@ -7,8 +7,12 @@ const LineManager = (() => {
     container = containerEl;
   }
 
-  function createLine(index) {
+  function createLine(index, initialData) {
     const lineData = { text: '', lang: 'en', ipa: '', ipaWords: [] };
+    if (initialData) {
+      lineData.text = initialData.text || '';
+      lineData.lang = initialData.lang || 'en';
+    }
 
     const wrapper = document.createElement('div');
     wrapper.className = 'lyric-line';
@@ -28,6 +32,7 @@ const LineManager = (() => {
     langSelect.addEventListener('change', () => {
       lineData.lang = langSelect.value;
       triggerUpdate(index);
+      App.saveState();
     });
 
     // Text input
@@ -38,6 +43,7 @@ const LineManager = (() => {
     input.addEventListener('input', () => {
       lineData.text = input.value;
       debouncedUpdate(index);
+      App.saveState();
     });
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
@@ -77,8 +83,17 @@ const LineManager = (() => {
     lineData.input = input;
     lineData.langSelect = langSelect;
 
+    if (initialData) {
+      input.value = lineData.text;
+      langSelect.value = lineData.lang;
+    }
+
     lines.splice(index, 0, lineData);
     container.appendChild(wrapper);
+
+    if (lineData.text) {
+      triggerUpdate(index);
+    }
 
     return lineData;
   }
@@ -92,6 +107,7 @@ const LineManager = (() => {
     lines.splice(idx, 1);
     reindex();
     App.updateRhymes();
+    App.saveState();
   }
 
   function reindex() {
