@@ -12,11 +12,66 @@
       <h1>Lyrics Maker</h1>
     </div>
     <p>Write lyrics, see phonetics, find rhymes</p>
-    <div class="history-buttons">
-      <button id="undo-btn" class="history-btn" disabled title="Undo (Ctrl+Z)">&#x21A9;</button>
-      <button id="redo-btn" class="history-btn" disabled title="Redo (Ctrl+Shift+Z)">&#x21AA;</button>
+    <div class="header-controls">
+      <div class="history-buttons">
+        <button id="undo-btn" class="history-btn" disabled title="Undo (Ctrl+Z)">&#x21A9;</button>
+        <button id="redo-btn" class="history-btn" disabled title="Redo (Ctrl+Shift+Z)">&#x21AA;</button>
+      </div>
+      <button id="about-btn" class="history-btn" title="About this tool">?</button>
     </div>
   </header>
+
+  <!-- About modal -->
+  <div id="about-modal" class="modal-overlay" hidden>
+    <div class="modal">
+      <button id="about-close" class="modal-close" title="Close">&times;</button>
+      <h2>About Lyrics Maker</h2>
+
+      <section>
+        <h3>How it works</h3>
+        <p>Lyrics Maker helps you write song lyrics with real-time phonetic feedback and rhyme detection.</p>
+        <ul>
+          <li><strong>Type a lyric</strong> on each line. Press <kbd>Enter</kbd> to move to the next line.</li>
+          <li><strong>IPA phonetics</strong> appear below each line, showing how the words are pronounced using the International Phonetic Alphabet.</li>
+          <li><strong>Rhyme detection</strong> automatically finds lines that end with the same sounds. Matching endings are <strong>bolded</strong> and color-coded &mdash; lines sharing a rhyme get a colored left border.</li>
+          <li><strong>Syllable count</strong> is shown as a small badge on each line.</li>
+          <li><strong>Drag &amp; drop</strong> lines using the <code>&equiv;</code> handle to reorder them.</li>
+          <li><strong>Paste</strong> multiple lines at once &mdash; they are automatically split into separate lyric lines.</li>
+          <li><strong>Undo / Redo</strong> with <kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Shift+Z</kbd> or the header buttons.</li>
+          <li>Your work is <strong>auto-saved</strong> in your browser and survives page refreshes.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h3>&#x1F1EC;&#x1F1E7; English</h3>
+        <p>IPA is fetched from a free dictionary API. Common words (pronouns, verbs, prepositions, contractions) are available instantly via a built-in dictionary. Words not found in either source are converted using English pronunciation rules &mdash; results are approximate given English's irregular spelling.</p>
+      </section>
+
+      <section>
+        <h3>&#x1F1EB;&#x1F1F7; French</h3>
+        <p>French uses a three-layer approach: a large built-in dictionary of common words, the free dictionary API, and a comprehensive rule-based converter as fallback. French spelling is fairly regular, so the rule-based converter handles most unknown words accurately. Missing accents are tolerated &mdash; typing <em>ecrire</em> will produce the same result as <em>&eacute;crire</em>.</p>
+      </section>
+
+      <section>
+        <h3>&#x1F1EA;&#x1F1F8; Spanish</h3>
+        <p>Spanish IPA comes from the dictionary API and a built-in dictionary of common words. Spanish has very regular pronunciation, so the API coverage combined with the built-in dictionary covers most vocabulary.</p>
+      </section>
+
+      <section>
+        <h3>&#x1F1EE;&#x1F1F9; Italian</h3>
+        <p>Italian works like Spanish: dictionary API plus a built-in dictionary. Italian pronunciation is largely predictable from spelling, making the API results reliable for most words.</p>
+      </section>
+
+      <section>
+        <h3>&#x1F3DB;&#xFE0F; Latin</h3>
+        <p>Latin uses a fully rule-based converter following Classical Latin pronunciation. Since Latin orthography maps deterministically to pronunciation, every word is converted without needing an API. Digraphs (<em>ae</em>, <em>oe</em>, <em>au</em>, <em>ph</em>, <em>th</em>, <em>ch</em>, <em>qu</em>) and all standard letter values are handled.</p>
+      </section>
+
+      <section class="modal-footer">
+        <p>Rhymes are detected by comparing the IPA endings of all lines. The longer the shared ending, the stronger the rhyme. Cross-language rhymes work naturally since comparison is based on sound, not spelling.</p>
+      </section>
+    </div>
+  </div>
   <main class="app-container">
     <div id="lines-container"></div>
     <button id="add-line-btn" class="add-line-btn">+ Add line</button>

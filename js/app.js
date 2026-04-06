@@ -30,7 +30,23 @@ const App = (() => {
     document.getElementById('undo-btn').addEventListener('click', undo);
     document.getElementById('redo-btn').addEventListener('click', redo);
 
+    // About modal
+    const aboutModal = document.getElementById('about-modal');
+    document.getElementById('about-btn').addEventListener('click', () => {
+      aboutModal.hidden = false;
+    });
+    document.getElementById('about-close').addEventListener('click', () => {
+      aboutModal.hidden = true;
+    });
+    aboutModal.addEventListener('click', (e) => {
+      if (e.target === aboutModal) aboutModal.hidden = true;
+    });
+
     document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !aboutModal.hidden) {
+        aboutModal.hidden = true;
+        return;
+      }
       if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
         e.preventDefault();
         undo();
