@@ -2,9 +2,47 @@ const LineManager = (() => {
   const lines = [];
   let container = null;
   let debounceTimers = {};
+  let draggedLine = null;
 
   function init(containerEl) {
     container = containerEl;
+
+    container.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      const target = getDragTarget(e.target);
+      if (!target || !draggedLine || target === draggedLine.el) return;
+      const rect = target.getBoundingClientRect();
+      const midY = rect.top + rect.height / 2;
+      if (e.clientY < midY) {
+        container.insertBefore(draggedLine.el, target);
+      } else {
+        container.insertBefore(draggedLine.el, target.nextSibling);
+      }
+    });
+
+    container.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (!draggedLine) return;
+      // Rebuild the lines array to match DOM order
+      const newOrder = [];
+      for (const child of container.children) {
+        const line = lines.find((l) => l.el === child);
+        if (line) newOrder.push(line);
+      }
+      lines.length = 0;
+      lines.push(...newOrder);
+      reindex();
+      App.updateRhymes();
+      App.saveState();
+    });
+  }
+
+  function getDragTarget(el) {
+    while (el && el !== container) {
+      if (el.classList && el.classList.contains('lyric-line')) return el;
+      el = el.parentElement;
+    }
+    return null;
   }
 
   function createLine(index, initialData) {
@@ -17,6 +55,25 @@ const LineManager = (() => {
     const wrapper = document.createElement('div');
     wrapper.className = 'lyric-line';
     wrapper.dataset.index = index;
+
+    // Drag handle
+    const dragHandle = document.createElement('span');
+    dragHandle.className = 'drag-handle';
+    dragHandle.textContent = '\u2261';
+    dragHandle.title = 'Drag to reorder';
+    dragHandle.addEventListener('mousedown', () => {
+      wrapper.draggable = true;
+    });
+    wrapper.addEventListener('dragstart', (e) => {
+      draggedLine = lineData;
+      wrapper.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    wrapper.addEventListener('dragend', () => {
+      wrapper.draggable = false;
+      wrapper.classList.remove('dragging');
+      draggedLine = null;
+    });
 
     // Language selector
     const langSelect = document.createElement('select');
@@ -75,6 +132,7 @@ const LineManager = (() => {
 
     const inputRow = document.createElement('div');
     inputRow.className = 'input-row';
+    inputRow.appendChild(dragHandle);
     inputRow.appendChild(langSelect);
     inputRow.appendChild(input);
     inputRow.appendChild(syllableCount);

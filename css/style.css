@@ -72,6 +72,28 @@ body {
   gap: 0.5rem;
 }
 
+.drag-handle {
+  cursor: grab;
+  color: var(--border);
+  font-size: 1.2rem;
+  user-select: none;
+  padding: 0 0.15rem;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.drag-handle:hover {
+  color: var(--text-muted);
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.lyric-line.dragging {
+  opacity: 0.4;
+}
+
 .lang-select {
   appearance: none;
   -webkit-appearance: none;
@@ -148,7 +170,7 @@ body {
 .ipa-display {
   font-size: 0.85rem;
   color: var(--text-muted);
-  padding: 0.25rem 0 0 3.25rem;
+  padding: 0.25rem 0 0 4.25rem;
   min-height: 1.4em;
   font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   transition: font-weight 0.2s;
