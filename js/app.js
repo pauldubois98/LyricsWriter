@@ -27,6 +27,10 @@ const App = (() => {
     LineManager.createLine(lineCount++);
   }
 
+  function addLineAfter(position, initialData) {
+    return LineManager.createLine(position, initialData);
+  }
+
   function saveState() {
     const lines = LineManager.getLines();
     const data = lines.map((l) => ({ text: l.text, lang: l.lang }));
@@ -56,7 +60,7 @@ const App = (() => {
     }
   }
 
-  return { init, addLine, saveState, updateRhymes };
+  return { init, addLine, addLineAfter, saveState, updateRhymes };
 })();
 
 document.addEventListener('DOMContentLoaded', App.init);

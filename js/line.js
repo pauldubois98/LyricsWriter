@@ -102,6 +102,28 @@ const LineManager = (() => {
       debouncedUpdate(index);
       App.saveState();
     });
+    input.addEventListener('paste', (e) => {
+      const text = e.clipboardData.getData('text');
+      const pastedLines = text.split(/\r?\n/).filter((l) => l.trim());
+      if (pastedLines.length <= 1) return; // single line, let default handle it
+      e.preventDefault();
+
+      const idx = lines.indexOf(lineData);
+      const currentLang = lineData.lang;
+
+      // Put first line in current input
+      input.value = pastedLines[0];
+      lineData.text = pastedLines[0];
+      triggerUpdate(lineData.el.dataset.index);
+
+      // Insert remaining lines after current
+      for (let p = 1; p < pastedLines.length; p++) {
+        App.addLineAfter(idx + p, { text: pastedLines[p], lang: currentLang });
+      }
+
+      reindex();
+      App.saveState();
+    });
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -153,7 +175,12 @@ const LineManager = (() => {
     }
 
     lines.splice(index, 0, lineData);
-    container.appendChild(wrapper);
+    // Insert at correct DOM position
+    if (index < container.children.length) {
+      container.insertBefore(wrapper, container.children[index]);
+    } else {
+      container.appendChild(wrapper);
+    }
 
     if (lineData.text) {
       triggerUpdate(index);
