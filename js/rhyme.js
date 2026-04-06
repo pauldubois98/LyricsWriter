@@ -66,9 +66,9 @@ const RhymeDetector = (() => {
   }
 
   // Detect rhymes by comparing all pairs of lines.
-  // Uses union-find to merge lines, but only connects pairs where the match
-  // is the best (longest) for at least one of the two lines. This prevents
-  // weak cross-group links from merging strong rhyme groups.
+  // Uses union-find with smart connection rules:
+  // - Connect if len is the best match for at least one line
+  // - AND len * 2 >= the other line's best (prevents weak lines pulling in strong ones)
   // Returns a Map<lineIndex, { tail, color }>
   function detectRhymes(lines) {
     const cleaned = lines.map((l) => cleanIpa(l.ipa));
@@ -82,7 +82,7 @@ const RhymeDetector = (() => {
       for (let j = i + 1; j < lines.length; j++) {
         if (!cleaned[j]) continue;
         const len = longestCommonSuffix(cleaned[i], cleaned[j]);
-        if (len >= 2) {
+        if (len >= 1) {
           pairs.push({ i, j, len });
           bestMatch[i] = Math.max(bestMatch[i], len);
           bestMatch[j] = Math.max(bestMatch[j], len);
@@ -90,10 +90,15 @@ const RhymeDetector = (() => {
       }
     }
 
-    // Only connect pairs where the suffix is the best match for at least one line
+    // Connect pairs where len is one line's best AND compatible with the other's strength
     const uf = makeUnionFind(lines.length);
     for (const { i, j, len } of pairs) {
-      if (len === bestMatch[i] || len === bestMatch[j]) {
+      const isBestForI = len === bestMatch[i];
+      const isBestForJ = len === bestMatch[j];
+      if (
+        (isBestForI && len * 2 >= bestMatch[j]) ||
+        (isBestForJ && len * 2 >= bestMatch[i])
+      ) {
         uf.union(i, j);
       }
     }
