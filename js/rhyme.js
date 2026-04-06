@@ -1,8 +1,16 @@
 const RhymeDetector = (() => {
-  // Clean IPA string for comparison: strip stress marks, slashes, brackets, length marks
+  // Clean IPA string for comparison: strip stress marks, slashes, brackets, length marks,
+  // and normalize voiced/voiceless pairs so rhymes like theirs/repairs are detected
   function cleanIpa(ipaStr) {
     return (ipaStr || '')
       .replace(/[ˈˌ\/\[\]ː]/g, '')
+      .replace(/z/g, 's')
+      .replace(/d/g, 't')
+      .replace(/b/g, 'p')
+      .replace(/ɡ/g, 'k')
+      .replace(/v/g, 'f')
+      .replace(/ð/g, 'θ')
+      .replace(/ʒ/g, 'ʃ')
       .trim();
   }
 
@@ -58,24 +66,35 @@ const RhymeDetector = (() => {
   }
 
   // Detect rhymes by comparing all pairs of lines.
-  // Uses union-find to merge lines that share any common suffix.
+  // Uses union-find to merge lines, but only connects pairs where the match
+  // is the best (longest) for at least one of the two lines. This prevents
+  // weak cross-group links from merging strong rhyme groups.
   // Returns a Map<lineIndex, { tail, color }>
   function detectRhymes(lines) {
     const cleaned = lines.map((l) => cleanIpa(l.ipa));
 
-    // Build edges: pairs with common suffix >= 1
-    const uf = makeUnionFind(lines.length);
-    const pairSuffix = []; // store suffix lengths for all pairs
+    // Compute all pairwise suffix lengths
+    const pairs = [];
+    const bestMatch = new Array(lines.length).fill(0);
 
     for (let i = 0; i < lines.length; i++) {
       if (!cleaned[i]) continue;
       for (let j = i + 1; j < lines.length; j++) {
         if (!cleaned[j]) continue;
         const len = longestCommonSuffix(cleaned[i], cleaned[j]);
-        if (len >= 1) {
-          uf.union(i, j);
-          pairSuffix.push({ i, j, len });
+        if (len >= 2) {
+          pairs.push({ i, j, len });
+          bestMatch[i] = Math.max(bestMatch[i], len);
+          bestMatch[j] = Math.max(bestMatch[j], len);
         }
+      }
+    }
+
+    // Only connect pairs where the suffix is the best match for at least one line
+    const uf = makeUnionFind(lines.length);
+    for (const { i, j, len } of pairs) {
+      if (len === bestMatch[i] || len === bestMatch[j]) {
+        uf.union(i, j);
       }
     }
 

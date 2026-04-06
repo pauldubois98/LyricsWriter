@@ -263,7 +263,7 @@ const LineManager = (() => {
       let cleanCount = 0;
       for (let k = fullIpa.length - 1; k >= 0 && cleanCount < tailCleanLen; k--) {
         const ch = fullIpa[k];
-        if (ch === 'ˈ' || ch === 'ˌ') continue;
+        if (ch === 'ˈ' || ch === 'ˌ' || ch === 'ː') continue;
         cleanCount++;
         origBoldStart = k;
       }
