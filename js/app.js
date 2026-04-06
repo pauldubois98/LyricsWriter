@@ -34,7 +34,7 @@ const App = (() => {
     }
   }
 
-  return { init, updateRhymes };
+  return { init, addLine, updateRhymes };
 })();
 
 document.addEventListener('DOMContentLoaded', App.init);

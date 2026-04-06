@@ -39,6 +39,18 @@ const LineManager = (() => {
       lineData.text = input.value;
       debouncedUpdate(index);
     });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const idx = lines.indexOf(lineData);
+        if (idx < lines.length - 1) {
+          lines[idx + 1].input.focus();
+        } else {
+          App.addLine();
+          lines[lines.length - 1].input.focus();
+        }
+      }
+    });
 
     // Delete button
     const deleteBtn = document.createElement('button');
