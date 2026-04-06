@@ -45,14 +45,14 @@ const App = (() => {
   function updateRhymes() {
     const lines = LineManager.getLines();
 
-    lines.forEach((_, i) => LineManager.setRhymeHighlight(i, false));
+    // Clear all highlights
+    lines.forEach((_, i) => LineManager.setRhymeHighlight(i, null));
 
-    const groups = RhymeDetector.detectRhymes(lines);
+    // Detect and apply rhyme highlights
+    const rhymes = RhymeDetector.detectRhymes(lines);
 
-    for (const [, indices] of groups) {
-      for (const idx of indices) {
-        LineManager.setRhymeHighlight(idx, true);
-      }
+    for (const [idx, tail] of rhymes) {
+      LineManager.setRhymeHighlight(idx, tail);
     }
   }
 

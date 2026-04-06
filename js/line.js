@@ -152,28 +152,61 @@ const LineManager = (() => {
       return;
     }
 
-    const parts = line.ipaWords.map((w) => {
-      if (w.found) {
-        return `<span class="ipa-word">${w.ipa}</span>`;
+    const rhymeTail = line.rhymeTail || null;
+    const fullIpa = line.ipaWords.map((w) => w.ipa).join(' ');
+
+    // Build the IPA string, then split the bold tail from the end
+    let html;
+    if (rhymeTail) {
+      // Find the tail in the full IPA (strip stress marks for matching)
+      const cleanFull = fullIpa.replace(/[ˈˌ]/g, '');
+      const tailPos = cleanFull.lastIndexOf(rhymeTail);
+
+      if (tailPos !== -1) {
+        // Map position back to original string (with stress marks)
+        let origPos = 0;
+        let cleanIdx = 0;
+        while (cleanIdx < tailPos && origPos < fullIpa.length) {
+          if (fullIpa[origPos] === 'ˈ' || fullIpa[origPos] === 'ˌ') {
+            origPos++;
+          } else {
+            origPos++;
+            cleanIdx++;
+          }
+        }
+        const before = fullIpa.substring(0, origPos);
+        const bold = fullIpa.substring(origPos);
+        html = `/${escapeHtml(before)}<b class="rhyme-match">${escapeHtml(bold)}</b>/`;
+      } else {
+        html = `/${escapeHtml(fullIpa)}/`;
       }
-      return `<span class="ipa-word ipa-unknown">${w.ipa}?</span>`;
+    } else {
+      html = `/${escapeHtml(fullIpa)}/`;
+    }
+
+    // Mark unknown words with italic
+    line.ipaWords.forEach((w) => {
+      if (!w.found) {
+        html = html.replace(w.ipa, `<i class="ipa-unknown">${escapeHtml(w.ipa)}?</i>`);
+      }
     });
 
-    line.ipaDisplay.innerHTML = '/' + parts.join(' ') + '/';
+    line.ipaDisplay.innerHTML = html;
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
   function getLines() {
     return lines;
   }
 
-  function setRhymeHighlight(lineIndex, isBold) {
+  function setRhymeHighlight(lineIndex, tail) {
     const line = lines[lineIndex];
     if (!line) return;
-    if (isBold) {
-      line.ipaDisplay.classList.add('rhyme-bold');
-    } else {
-      line.ipaDisplay.classList.remove('rhyme-bold');
-    }
+    line.rhymeTail = tail;
+    renderIpa(line);
   }
 
   return { init, createLine, getLines, setRhymeHighlight, removeLine };

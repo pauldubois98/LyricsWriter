@@ -1,64 +1,55 @@
 const RhymeDetector = (() => {
-  const IPA_VOWELS = new Set([
-    'a', 'e', 'i', 'o', 'u',
-    '\u025B', '\u0254', '\u026A', '\u028A', '\u028C', '\u00E6', '\u0251', '\u0259',
-    '\u025D', '\u025A', '\u00F8', '\u0153', 'y', '\u0275', '\u0250',
-    '\u0252', '\u026F', '\u0264', '\u025E', '\u025C', '\u0268', '\u0289',
-  ]);
-
-  // Extract the rhyme tail: from the last vowel onward
-  function extractRhymeTail(ipaStr) {
-    if (!ipaStr) return null;
-
-    // Strip stress marks, slashes, brackets
-    const clean = ipaStr
-      .replace(/[ˈˌ\/\[\]]/g, '')
+  // Clean IPA string for comparison: strip stress marks, slashes, brackets, length marks
+  function cleanIpa(ipaStr) {
+    return (ipaStr || '')
+      .replace(/[ˈˌ\/\[\]ː]/g, '')
       .trim();
-
-    if (!clean) return null;
-
-    // Find the last vowel position
-    let lastVowelStart = -1;
-    for (let i = clean.length - 1; i >= 0; i--) {
-      if (IPA_VOWELS.has(clean[i])) {
-        lastVowelStart = i;
-        break;
-      }
-    }
-
-    if (lastVowelStart === -1) return null;
-
-    return clean.substring(lastVowelStart);
   }
 
-  // Detect rhyme groups across all lines
-  // lines: array of { ipa: string }
-  // Returns: Map<groupId, Set<lineIndex>>  (only groups with 2+ members)
+  // Find the longest common suffix between two cleaned IPA strings
+  function longestCommonSuffix(a, b) {
+    let i = a.length - 1;
+    let j = b.length - 1;
+    let len = 0;
+    while (i >= 0 && j >= 0 && a[i] === b[j]) {
+      len++;
+      i--;
+      j--;
+    }
+    return len;
+  }
+
+  // Detect rhymes by comparing all pairs of lines.
+  // For each line, find the longest common IPA suffix with any other line.
+  // Returns a Map<lineIndex, suffixLength> for lines that share at least 1 char.
   function detectRhymes(lines) {
-    const tailToIndices = new Map();
+    const cleaned = lines.map((l) => cleanIpa(l.ipa));
+    // For each line, track the longest common suffix length with any other line
+    const bestSuffix = new Array(lines.length).fill(0);
 
-    lines.forEach((line, idx) => {
-      if (!line.ipa) return;
-      const tail = extractRhymeTail(line.ipa);
-      if (!tail || tail.length < 2) return;
-
-      if (!tailToIndices.has(tail)) {
-        tailToIndices.set(tail, new Set());
-      }
-      tailToIndices.get(tail).add(idx);
-    });
-
-    // Filter out groups with only one member
-    const groups = new Map();
-    let groupId = 0;
-    for (const [tail, indices] of tailToIndices) {
-      if (indices.size >= 2) {
-        groups.set(groupId++, indices);
+    for (let i = 0; i < lines.length; i++) {
+      if (!cleaned[i]) continue;
+      for (let j = i + 1; j < lines.length; j++) {
+        if (!cleaned[j]) continue;
+        const len = longestCommonSuffix(cleaned[i], cleaned[j]);
+        if (len >= 1) {
+          bestSuffix[i] = Math.max(bestSuffix[i], len);
+          bestSuffix[j] = Math.max(bestSuffix[j], len);
+        }
       }
     }
 
-    return groups;
+    // Build result: map lineIndex -> tail string (from the cleaned IPA)
+    const result = new Map();
+    for (let i = 0; i < lines.length; i++) {
+      if (bestSuffix[i] >= 1 && cleaned[i]) {
+        const tail = cleaned[i].substring(cleaned[i].length - bestSuffix[i]);
+        result.set(i, tail);
+      }
+    }
+
+    return result;
   }
 
-  return { extractRhymeTail, detectRhymes };
+  return { detectRhymes };
 })();
