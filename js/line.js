@@ -142,7 +142,7 @@ const LineManager = (() => {
     deleteBtn.className = 'delete-btn';
     deleteBtn.textContent = '\u00D7';
     deleteBtn.title = 'Remove line';
-    deleteBtn.addEventListener('click', () => removeLine(index));
+    deleteBtn.addEventListener('click', () => removeLine(lineData));
 
     // IPA display
     const ipaDisplay = document.createElement('div');
@@ -189,12 +189,11 @@ const LineManager = (() => {
     return lineData;
   }
 
-  function removeLine(index) {
+  function removeLine(line) {
     if (lines.length <= 1) return;
-    const line = lines.find((l) => l.el.dataset.index == index);
-    if (!line) return;
-    line.el.remove();
     const idx = lines.indexOf(line);
+    if (idx === -1) return;
+    line.el.remove();
     lines.splice(idx, 1);
     reindex();
     App.updateRhymes();
