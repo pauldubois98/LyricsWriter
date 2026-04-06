@@ -46,31 +46,32 @@
 
       <section>
         <h3>&#x1F1EC;&#x1F1E7; English</h3>
-        <p>IPA is fetched from a free dictionary API. Common words (pronouns, verbs, prepositions, contractions) are available instantly via a built-in dictionary. Words not found in either source are converted using English pronunciation rules &mdash; results are approximate given English's irregular spelling.</p>
+        <p>IPA comes from a built-in dictionary of common words (pronouns, verbs, prepositions, contractions) and a rule-based pronunciation converter for unknown words. English spelling is irregular, so rule-based results are approximate. All processing is done locally &mdash; no network requests.</p>
       </section>
 
       <section>
         <h3>&#x1F1EB;&#x1F1F7; French</h3>
-        <p>French uses a three-layer approach: a large built-in dictionary of common words, the free dictionary API, and a comprehensive rule-based converter as fallback. French spelling is fairly regular, so the rule-based converter handles most unknown words accurately. Missing accents are tolerated &mdash; typing <em>ecrire</em> will produce the same result as <em>&eacute;crire</em>.</p>
+        <p>French uses a built-in dictionary and a comprehensive rule-based converter. French spelling is fairly regular, so most words are handled accurately. Missing accents are tolerated &mdash; typing <em>ecrire</em> will produce the same result as <em>&eacute;crire</em>.</p>
+        <p>Syllable counting follows French prosody rules: the <em>e muet</em> (ə) counts as a syllable before a consonant but is elided before a vowel or at the end of a line. When elision is ambiguous, both counts are shown (e.g. <strong>11~12</strong>).</p>
       </section>
 
       <section>
         <h3>&#x1F1EA;&#x1F1F8; Spanish</h3>
-        <p>Spanish IPA comes from the dictionary API and a built-in dictionary of common words. Spanish has very regular pronunciation, so the API coverage combined with the built-in dictionary covers most vocabulary.</p>
+        <p>Spanish uses a built-in dictionary and a rule-based converter. Spanish pronunciation is very regular (soft c/g, silent h, &ntilde;, ll, ch, intervocalic b/d approximants), so most words are accurately converted.</p>
       </section>
 
       <section>
         <h3>&#x1F1EE;&#x1F1F9; Italian</h3>
-        <p>Italian works like Spanish: dictionary API plus a built-in dictionary. Italian pronunciation is largely predictable from spelling, making the API results reliable for most words.</p>
+        <p>Italian uses a built-in dictionary and a rule-based converter handling sc/sch/sci, gli, gn, ch/gh, ci/gi, zz, and intervocalic s voicing. Italian pronunciation is largely predictable from spelling.</p>
       </section>
 
       <section>
         <h3>&#x1F3DB;&#xFE0F; Latin</h3>
-        <p>Latin uses a fully rule-based converter following Classical Latin pronunciation. Since Latin orthography maps deterministically to pronunciation, every word is converted without needing an API. Digraphs (<em>ae</em>, <em>oe</em>, <em>au</em>, <em>ph</em>, <em>th</em>, <em>ch</em>, <em>qu</em>) and all standard letter values are handled.</p>
+        <p>Latin uses a fully rule-based converter following Classical Latin pronunciation. Digraphs (<em>ae</em>, <em>oe</em>, <em>au</em>, <em>ph</em>, <em>th</em>, <em>ch</em>, <em>qu</em>) and all standard letter values are handled.</p>
       </section>
 
       <section class="modal-footer">
-        <p>Rhymes are detected by comparing the IPA endings of all lines. The longer the shared ending, the stronger the rhyme. Cross-language rhymes work naturally since comparison is based on sound, not spelling.</p>
+        <p>Rhymes are detected by comparing the IPA endings of all lines. Lines sharing any common ending sound are grouped together and color-coded. Cross-language rhymes work naturally since comparison is based on sound, not spelling. All processing runs entirely in your browser &mdash; no data is sent to any server.</p>
       </section>
     </div>
   </div>
