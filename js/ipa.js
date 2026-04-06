@@ -1044,6 +1044,480 @@ const IpaConverter = (() => {
     return result;
   }
 
+  // Rule-based English pronunciation (best-effort for unknown words)
+  function englishToIpa(word) {
+    let w = word.toLowerCase().trim();
+    if (!w) return '';
+
+    const VOWELS = 'aeiouy';
+    function isVowel(ch) { return VOWELS.includes(ch); }
+
+    // Check for magic-e: consonant pattern between vowel and final e
+    function hasMagicE() {
+      if (w.length < 4) return false;
+      if (w[w.length - 1] !== 'e') return false;
+      const beforeE = w[w.length - 2];
+      if (isVowel(beforeE)) return false;
+      // Check there's a vowel before the consonant+e
+      return true;
+    }
+    const magicE = hasMagicE();
+
+    let result = '';
+    let i = 0;
+
+    while (i < w.length) {
+      const c = w[i];
+      const next = w[i + 1] || '';
+      const next2 = w[i + 2] || '';
+      const remaining = w.substring(i);
+      const isLast = (pos) => pos >= w.length;
+      const prevChar = i > 0 ? w[i - 1] : '';
+
+      // ---- Multi-char patterns (longest first) ----
+
+      // -tion
+      if (remaining.startsWith('tion')) {
+        result += 'ʃən';
+        i += 4; continue;
+      }
+      // -sion
+      if (remaining.startsWith('sion')) {
+        result += 'ʒən';
+        i += 4; continue;
+      }
+      // -ture
+      if (remaining.startsWith('ture') && isLast(i + 4)) {
+        result += 'tʃɝ';
+        i += 4; continue;
+      }
+      // -ous
+      if (remaining === 'ous') {
+        result += 'əs';
+        i += 3; continue;
+      }
+      // -ight
+      if (remaining.startsWith('ight')) {
+        result += 'aɪt';
+        i += 4; continue;
+      }
+      // -ough patterns
+      if (remaining.startsWith('ough')) {
+        // rough/tough = ʌf, though = oʊ, through = uː, thought = ɔːt
+        // Default to oʊ (most common in lyrics)
+        if (remaining === 'ough') {
+          result += 'oʊ';
+        } else if (remaining.startsWith('ought')) {
+          result += 'ɔːt';
+          i += 5; continue;
+        } else {
+          result += 'oʊ';
+        }
+        i += 4; continue;
+      }
+
+      // tch
+      if (remaining.startsWith('tch')) {
+        result += 'tʃ';
+        i += 3; continue;
+      }
+      // dge
+      if (remaining.startsWith('dge')) {
+        result += 'dʒ';
+        i += 3; continue;
+      }
+
+      // th
+      if (remaining.startsWith('th')) {
+        // Voiced th at start of function words handled by fallback dict
+        // Default to voiceless
+        if (remaining.startsWith('the') || remaining.startsWith('thi') ||
+            remaining.startsWith('tha') || remaining.startsWith('tho') ||
+            remaining.startsWith('thy')) {
+          result += 'ð';
+        } else {
+          result += 'θ';
+        }
+        i += 2; continue;
+      }
+      // sh
+      if (remaining.startsWith('sh')) {
+        result += 'ʃ';
+        i += 2; continue;
+      }
+      // ch
+      if (remaining.startsWith('ch')) {
+        result += 'tʃ';
+        i += 2; continue;
+      }
+      // ph
+      if (remaining.startsWith('ph')) {
+        result += 'f';
+        i += 2; continue;
+      }
+      // wh
+      if (remaining.startsWith('wh')) {
+        result += 'w';
+        i += 2; continue;
+      }
+      // ck
+      if (remaining.startsWith('ck')) {
+        result += 'k';
+        i += 2; continue;
+      }
+      // ng
+      if (remaining.startsWith('ng')) {
+        if (next2 && isVowel(next2)) {
+          result += 'ŋɡ';
+        } else {
+          result += 'ŋ';
+        }
+        i += 2; continue;
+      }
+      // nk
+      if (remaining.startsWith('nk')) {
+        result += 'ŋk';
+        i += 2; continue;
+      }
+      // wr
+      if (remaining.startsWith('wr') && i === 0) {
+        result += 'ɹ';
+        i += 2; continue;
+      }
+      // kn
+      if (remaining.startsWith('kn') && i === 0) {
+        result += 'n';
+        i += 2; continue;
+      }
+      // gn
+      if (remaining.startsWith('gn') && i === 0) {
+        result += 'n';
+        i += 2; continue;
+      }
+      // mb at end
+      if (remaining === 'mb') {
+        result += 'm';
+        i += 2; continue;
+      }
+
+      // qu
+      if (remaining.startsWith('qu')) {
+        result += 'kw';
+        i += 2; continue;
+      }
+
+      // Doubled consonants
+      if (next === c && 'bcdfgklmnprst'.includes(c)) {
+        // Skip, handle as single below
+        i += 1; continue;
+      }
+
+      // ---- Vowel digraphs ----
+
+      // -ey at end
+      if (remaining === 'ey') {
+        result += 'i';
+        i += 2; continue;
+      }
+      // -ay
+      if (remaining.startsWith('ay')) {
+        result += 'eɪ';
+        i += 2; continue;
+      }
+      // ee
+      if (remaining.startsWith('ee')) {
+        result += 'iː';
+        i += 2; continue;
+      }
+      // ea
+      if (remaining.startsWith('ea')) {
+        // ea before d/th/lth often = ɛ (dead, breath, health)
+        if (next2 === 'd' || remaining.startsWith('eath')) {
+          result += 'ɛ';
+        } else {
+          result += 'iː';
+        }
+        i += 2; continue;
+      }
+      // oo
+      if (remaining.startsWith('oo')) {
+        if (next2 === 'k' || next2 === 'd') {
+          result += 'ʊ';
+        } else {
+          result += 'uː';
+        }
+        i += 2; continue;
+      }
+      // oi, oy
+      if (remaining.startsWith('oi') || remaining.startsWith('oy')) {
+        result += 'ɔɪ';
+        i += 2; continue;
+      }
+      // ou
+      if (remaining.startsWith('ou')) {
+        if (next2 === 'l' || next2 === 'r') {
+          result += 'aʊ';
+        } else if (remaining.startsWith('oul')) {
+          result += 'ʊ';
+        } else {
+          result += 'aʊ';
+        }
+        i += 2; continue;
+      }
+      // ow
+      if (remaining.startsWith('ow')) {
+        if (isLast(i + 2) || next2 === 'n' || next2 === 'l' || next2 === 'e') {
+          result += 'aʊ';
+        } else {
+          result += 'oʊ';
+        }
+        i += 2; continue;
+      }
+      // aw
+      if (remaining.startsWith('aw')) {
+        result += 'ɔː';
+        i += 2; continue;
+      }
+      // ie
+      if (remaining.startsWith('ie')) {
+        if (isLast(i + 2)) {
+          result += 'i';
+        } else {
+          result += 'iː';
+        }
+        i += 2; continue;
+      }
+      // ei
+      if (remaining.startsWith('ei')) {
+        result += 'eɪ';
+        i += 2; continue;
+      }
+      // ew
+      if (remaining.startsWith('ew')) {
+        result += 'juː';
+        i += 2; continue;
+      }
+      // air
+      if (remaining.startsWith('air')) {
+        result += 'ɛɹ';
+        i += 3; continue;
+      }
+      // are at end
+      if (remaining === 'are') {
+        result += 'ɛɹ';
+        i += 3; continue;
+      }
+      // ore/oar
+      if (remaining.startsWith('ore') || remaining.startsWith('oar')) {
+        result += 'ɔːɹ';
+        i += 3; continue;
+      }
+      // -er, -ir, -ur at end
+      if ((remaining === 'er' || remaining === 'ir' || remaining === 'ur')) {
+        result += 'ɝ';
+        i += 2; continue;
+      }
+
+      // ---- Single vowels ----
+      if (c === 'a') {
+        // magic-e: a_e = eɪ
+        if (next && !isVowel(next) && next2 === 'e' && isLast(i + 3) && magicE) {
+          result += 'eɪ';
+          i += 1; continue;
+        }
+        // a before r
+        if (next === 'r') {
+          result += 'ɑː';
+          i += 1; continue;
+        }
+        // a before ll
+        if (remaining.startsWith('all')) {
+          result += 'ɔː';
+          i += 1; continue;
+        }
+        // Default short a
+        result += 'æ';
+        i += 1; continue;
+      }
+
+      if (c === 'e') {
+        // Silent final e
+        if (isLast(i + 1)) {
+          // Skip (silent)
+          i += 1; continue;
+        }
+        // e before r
+        if (next === 'r' && (isLast(i + 2) || !isVowel(next2))) {
+          result += 'ɝ';
+          i += 2; continue;
+        }
+        // magic-e: e_e = iː
+        if (next && !isVowel(next) && next2 === 'e' && isLast(i + 3) && magicE) {
+          result += 'iː';
+          i += 1; continue;
+        }
+        // Default short e
+        result += 'ɛ';
+        i += 1; continue;
+      }
+
+      if (c === 'i') {
+        // magic-e: i_e = aɪ
+        if (next && !isVowel(next) && next2 === 'e' && isLast(i + 3) && magicE) {
+          result += 'aɪ';
+          i += 1; continue;
+        }
+        // i before r
+        if (next === 'r' && (isLast(i + 2) || !isVowel(next2))) {
+          result += 'ɝ';
+          i += 2; continue;
+        }
+        // i before nd, ld, gh = long i
+        if (remaining.startsWith('ind') || remaining.startsWith('ild') || remaining.startsWith('igh')) {
+          result += 'aɪ';
+          i += 1; continue;
+        }
+        // Default short i
+        result += 'ɪ';
+        i += 1; continue;
+      }
+
+      if (c === 'o') {
+        // magic-e: o_e = oʊ
+        if (next && !isVowel(next) && next2 === 'e' && isLast(i + 3) && magicE) {
+          result += 'oʊ';
+          i += 1; continue;
+        }
+        // o before r
+        if (next === 'r') {
+          result += 'ɔː';
+          i += 1; continue;
+        }
+        // o before ld
+        if (remaining.startsWith('old')) {
+          result += 'oʊ';
+          i += 1; continue;
+        }
+        // Default short o
+        result += 'ɑː';
+        i += 1; continue;
+      }
+
+      if (c === 'u') {
+        // magic-e: u_e = juː
+        if (next && !isVowel(next) && next2 === 'e' && isLast(i + 3) && magicE) {
+          result += 'juː';
+          i += 1; continue;
+        }
+        // u before r
+        if (next === 'r' && (isLast(i + 2) || !isVowel(next2))) {
+          result += 'ɝ';
+          i += 2; continue;
+        }
+        // u after certain consonants can be uː
+        if ('lrjs'.includes(prevChar)) {
+          result += 'uː';
+        } else {
+          result += 'ʌ';
+        }
+        i += 1; continue;
+      }
+
+      if (c === 'y') {
+        if (i === 0) {
+          // y at start = j
+          result += 'j';
+        } else if (isLast(i + 1)) {
+          // y at end of word
+          if (w.length <= 2) {
+            result += 'aɪ'; // by, my, fly
+          } else {
+            result += 'i'; // happy, baby
+          }
+        } else {
+          result += 'ɪ';
+        }
+        i += 1; continue;
+      }
+
+      // ---- Consonants ----
+      if (c === 'c') {
+        if ('eiy'.includes(next)) {
+          result += 's';
+        } else {
+          result += 'k';
+        }
+        i += 1; continue;
+      }
+      if (c === 'g') {
+        if ('eiy'.includes(next) && !remaining.startsWith('get') && !remaining.startsWith('give') && !remaining.startsWith('girl')) {
+          result += 'dʒ';
+        } else {
+          result += 'ɡ';
+        }
+        i += 1; continue;
+      }
+      if (c === 'j') { result += 'dʒ'; i += 1; continue; }
+      if (c === 'r') { result += 'ɹ'; i += 1; continue; }
+      if (c === 'x') {
+        if (i === 0) {
+          result += 'z';
+        } else {
+          result += 'ks';
+        }
+        i += 1; continue;
+      }
+
+      // -le at end = əl
+      if (c === 'l' && remaining === 'le') {
+        result += 'əl';
+        i += 2; continue;
+      }
+
+      // -ed at end
+      if (c === 'e' && remaining === 'ed') {
+        // After t/d = ɪd, after voiceless = t, after voiced = d
+        const prev = result[result.length - 1] || '';
+        if ('td'.includes(w[i - 1] || '')) {
+          result += 'ɪd';
+        } else if ('pkfsʃθ'.includes(prev)) {
+          result += 't';
+        } else {
+          result += 'd';
+        }
+        i += 2; continue;
+      }
+
+      // -ing
+      if (remaining === 'ing') {
+        result += 'ɪŋ';
+        i += 3; continue;
+      }
+
+      // -ly
+      if (remaining === 'ly') {
+        result += 'li';
+        i += 2; continue;
+      }
+
+      // Simple consonant map
+      const consonantMap = {
+        b: 'b', d: 'd', f: 'f', h: 'h', k: 'k', l: 'l', m: 'm',
+        n: 'n', p: 'p', s: 's', t: 't', v: 'v', w: 'w', z: 'z',
+      };
+      if (consonantMap[c]) {
+        result += consonantMap[c];
+        i += 1; continue;
+      }
+
+      // Fallback
+      result += c;
+      i += 1;
+    }
+
+    return result;
+  }
+
   // Classical Latin pronunciation rules
   function latinToIpa(word) {
     const w = word.toLowerCase().trim();
@@ -1095,9 +1569,12 @@ const IpaConverter = (() => {
         ipa = latinToIpa(clean);
       } else {
         ipa = await fetchIpaFromAPI(lang, clean);
-        // Rule-based fallback for French
+        // Rule-based fallbacks
         if (!ipa && lang === 'fr') {
           ipa = frenchToIpa(clean);
+        }
+        if (!ipa && lang === 'en') {
+          ipa = englishToIpa(clean);
         }
       }
 
