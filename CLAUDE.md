@@ -1,4 +1,4 @@
-# Lyrics Writter
+# Lyrics Writer
 
 This is a web tool to help the user writing music lyrics.
 

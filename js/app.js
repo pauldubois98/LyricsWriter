@@ -1,6 +1,6 @@
 const App = (() => {
   let lineCount = 0;
-  const STORAGE_KEY = 'lyricsmaker_lines';
+  const STORAGE_KEY = 'lyricswriter_lines';
   const MAX_UNDO = 100;
   const undoStack = [];
   const redoStack = [];
