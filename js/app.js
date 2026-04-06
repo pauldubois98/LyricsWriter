@@ -46,13 +46,13 @@ const App = (() => {
     const lines = LineManager.getLines();
 
     // Clear all highlights
-    lines.forEach((_, i) => LineManager.setRhymeHighlight(i, null));
+    lines.forEach((_, i) => LineManager.setRhymeHighlight(i, null, null));
 
     // Detect and apply rhyme highlights
     const rhymes = RhymeDetector.detectRhymes(lines);
 
-    for (const [idx, tail] of rhymes) {
-      LineManager.setRhymeHighlight(idx, tail);
+    for (const [idx, { tail, color }] of rhymes) {
+      LineManager.setRhymeHighlight(idx, tail, color);
     }
   }
 

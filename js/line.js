@@ -218,6 +218,7 @@ const LineManager = (() => {
     }
 
     const rhymeTail = line.rhymeTail || null;
+    const rhymeColor = line.rhymeColor || null;
     const fullIpa = line.ipaWords.map((w) => w.ipa).join(' ');
 
     // Build the IPA string, then split the bold tail from the end
@@ -241,7 +242,8 @@ const LineManager = (() => {
         }
         const before = fullIpa.substring(0, origPos);
         const bold = fullIpa.substring(origPos);
-        html = `/${escapeHtml(before)}<b class="rhyme-match">${escapeHtml(bold)}</b>/`;
+        const style = rhymeColor ? ` style="color:${rhymeColor}"` : '';
+        html = `/${escapeHtml(before)}<b class="rhyme-match"${style}>${escapeHtml(bold)}</b>/`;
       } else {
         html = `/${escapeHtml(fullIpa)}/`;
       }
@@ -257,6 +259,13 @@ const LineManager = (() => {
     });
 
     line.ipaDisplay.innerHTML = html;
+
+    // Color the left border of the card
+    if (rhymeColor) {
+      line.el.style.borderLeft = `3px solid ${rhymeColor}`;
+    } else {
+      line.el.style.borderLeft = '';
+    }
 
     const syllables = countSyllables(fullIpa);
     line.syllableCount.textContent = syllables;
@@ -293,10 +302,11 @@ const LineManager = (() => {
     return lines;
   }
 
-  function setRhymeHighlight(lineIndex, tail) {
+  function setRhymeHighlight(lineIndex, tail, color) {
     const line = lines[lineIndex];
     if (!line) return;
     line.rhymeTail = tail;
+    line.rhymeColor = color;
     renderIpa(line);
   }
 
