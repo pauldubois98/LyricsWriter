@@ -65,6 +65,7 @@ const LineManager = (() => {
       wrapper.draggable = true;
     });
     wrapper.addEventListener('dragstart', (e) => {
+      App.pushUndo();
       draggedLine = lineData;
       wrapper.classList.add('dragging');
       e.dataTransfer.effectAllowed = 'move';
@@ -87,6 +88,7 @@ const LineManager = (() => {
       langSelect.appendChild(opt);
     });
     langSelect.addEventListener('change', () => {
+      App.pushUndo();
       lineData.lang = langSelect.value;
       triggerUpdate(index);
       App.saveState();
@@ -98,6 +100,7 @@ const LineManager = (() => {
     input.className = 'lyric-input';
     input.placeholder = 'Type a lyric line...';
     input.addEventListener('input', () => {
+      App.pushUndoDebounced();
       lineData.text = input.value;
       debouncedUpdate(index);
       App.saveState();
@@ -107,6 +110,7 @@ const LineManager = (() => {
       const pastedLines = text.split(/\r?\n/).filter((l) => l.trim());
       if (pastedLines.length <= 1) return; // single line, let default handle it
       e.preventDefault();
+      App.pushUndo();
 
       const idx = lines.indexOf(lineData);
       const currentLang = lineData.lang;
@@ -131,6 +135,7 @@ const LineManager = (() => {
         if (idx < lines.length - 1) {
           lines[idx + 1].input.focus();
         } else {
+          App.pushUndo();
           App.addLine();
           lines[lines.length - 1].input.focus();
         }
@@ -193,6 +198,7 @@ const LineManager = (() => {
     if (lines.length <= 1) return;
     const idx = lines.indexOf(line);
     if (idx === -1) return;
+    App.pushUndo();
     line.el.remove();
     lines.splice(idx, 1);
     reindex();
@@ -336,5 +342,22 @@ const LineManager = (() => {
     renderIpa(line);
   }
 
-  return { init, createLine, getLines, setRhymeHighlight, removeLine };
+  function getSnapshot() {
+    return lines.map((l) => ({ text: l.text, lang: l.lang }));
+  }
+
+  function restoreSnapshot(snapshot) {
+    // Remove all existing lines
+    while (lines.length) {
+      lines[0].el.remove();
+      lines.shift();
+    }
+    // Recreate from snapshot
+    snapshot.forEach((data, i) => {
+      createLine(i, data);
+    });
+    reindex();
+  }
+
+  return { init, createLine, getLines, getSnapshot, restoreSnapshot, setRhymeHighlight, removeLine };
 })();

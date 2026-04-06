@@ -1,6 +1,10 @@
 const App = (() => {
   let lineCount = 0;
   const STORAGE_KEY = 'lyricsmaker_lines';
+  const MAX_UNDO = 100;
+  const undoStack = [];
+  const redoStack = [];
+  let undoDebounce = null;
 
   function init() {
     const container = document.getElementById('lines-container');
@@ -18,9 +22,58 @@ const App = (() => {
     }
 
     document.getElementById('add-line-btn').addEventListener('click', () => {
+      pushUndo();
       addLine();
       saveState();
     });
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      }
+      if ((e.ctrlKey || e.metaKey) && ((e.key === 'z' && e.shiftKey) || e.key === 'y')) {
+        e.preventDefault();
+        redo();
+      }
+    });
+  }
+
+  function pushUndo() {
+    undoStack.push(LineManager.getSnapshot());
+    if (undoStack.length > MAX_UNDO) undoStack.shift();
+    redoStack.length = 0;
+  }
+
+  // Debounced pushUndo for text input — groups rapid keystrokes into one undo step
+  function pushUndoDebounced() {
+    if (undoDebounce === null) {
+      pushUndo();
+    }
+    clearTimeout(undoDebounce);
+    undoDebounce = setTimeout(() => {
+      undoDebounce = null;
+    }, 500);
+  }
+
+  function undo() {
+    if (undoStack.length === 0) return;
+    redoStack.push(LineManager.getSnapshot());
+    const snapshot = undoStack.pop();
+    lineCount = snapshot.length;
+    LineManager.restoreSnapshot(snapshot);
+    updateRhymes();
+    saveState();
+  }
+
+  function redo() {
+    if (redoStack.length === 0) return;
+    undoStack.push(LineManager.getSnapshot());
+    const snapshot = redoStack.pop();
+    lineCount = snapshot.length;
+    LineManager.restoreSnapshot(snapshot);
+    updateRhymes();
+    saveState();
   }
 
   function addLine() {
@@ -60,7 +113,7 @@ const App = (() => {
     }
   }
 
-  return { init, addLine, addLineAfter, saveState, updateRhymes };
+  return { init, addLine, addLineAfter, pushUndo, pushUndoDebounced, saveState, updateRhymes };
 })();
 
 document.addEventListener('DOMContentLoaded', App.init);
