@@ -499,15 +499,12 @@ const IpaConverter = (() => {
   }
 
   async function fetchIpaFromAPI(lang, word) {
+    // Check fallback first (before cache, since cache may have stored null from a failed API call)
+    const fallback = lookupFallback(lang, word);
+    if (fallback) return fallback;
+
     const key = cacheKey(lang, word);
     if (cache[key] !== undefined) return cache[key];
-
-    // Check fallback first
-    const fallback = lookupFallback(lang, word);
-    if (fallback) {
-      cache[key] = fallback;
-      return fallback;
-    }
 
     try {
       const res = await fetch(
@@ -940,10 +937,15 @@ const IpaConverter = (() => {
       }
 
       // Final consonants: usually silent (except C, R, F, L - "CaReFuL")
-      // d, t, p, z, x at end of word -> silent
-      if (isLast(i + 1) && 'dtpzxsg'.includes(c)) {
-        i += 1;
-        continue;
+      // d, t, p, z, x, s, g at end of word -> silent
+      // Also silent if only other silent consonants follow (e.g. "ds" in "attends", "ps" in "temps")
+      if ('dtpzxsg'.includes(c)) {
+        const tail = w.substring(i);
+        const allSilent = [...tail].every(ch => 'dtpzxsg'.includes(ch));
+        if (allSilent) {
+          i = w.length;
+          continue;
+        }
       }
 
       // Vowels
