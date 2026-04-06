@@ -465,10 +465,37 @@ const IpaConverter = (() => {
     return `${lang}:${word}`;
   }
 
+  function stripAccents(str) {
+    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/œ/g, 'oe').replace(/æ/g, 'ae');
+  }
+
+  // Build accent-stripped reverse maps (lazy, once per language)
+  const strippedMaps = {};
+  function getStrippedMap(lang) {
+    if (strippedMaps[lang]) return strippedMaps[lang];
+    const dict = FALLBACK[lang];
+    if (!dict) return null;
+    const map = {};
+    for (const key of Object.keys(dict)) {
+      const stripped = stripAccents(key);
+      if (stripped !== key && !map[stripped]) {
+        map[stripped] = dict[key];
+      }
+    }
+    strippedMaps[lang] = map;
+    return map;
+  }
+
   function lookupFallback(lang, word) {
     const dict = FALLBACK[lang];
     if (!dict) return null;
-    return dict[word] || null;
+    // Exact match first
+    if (dict[word]) return dict[word];
+    // Try accent-stripped match
+    const stripped = stripAccents(word);
+    const sMap = getStrippedMap(lang);
+    if (sMap && sMap[stripped]) return sMap[stripped];
+    return null;
   }
 
   async function fetchIpaFromAPI(lang, word) {
@@ -504,13 +531,27 @@ const IpaConverter = (() => {
     }
   }
 
+  // Restore common French accent patterns on unaccented input
+  function restoreFrenchAccents(word) {
+    let w = word;
+    // é at start before consonant cluster: e -> é (écrire, état, école, élève...)
+    w = w.replace(/^e([bcdfghjklmnpqrstvwxz]{2})/, 'é$1');
+    w = w.replace(/^e([bcdfghjklmnpqrstvwxz][rl])/, 'é$1');
+    // -er, -ez, -é, -ée at end
+    w = w.replace(/e(r|z)$/, 'é$1');
+    w = w.replace(/ee$/, 'ée');
+    // -ère, -ère
+    w = w.replace(/ere$/, 'ère');
+    // -ête
+    w = w.replace(/ete$/, 'ête');
+    return w;
+  }
+
   // Rule-based French pronunciation
   function frenchToIpa(word) {
-    let w = word.toLowerCase().trim();
+    let w = restoreFrenchAccents(word.toLowerCase().trim());
     if (!w) return '';
 
-    // Normalize accented characters for processing
-    // but keep track of accents for rules
     const VOWELS = 'aeiouyàâäéèêëïîôùûüœæ';
 
     function isVowel(ch) {
@@ -527,9 +568,7 @@ const IpaConverter = (() => {
       const c = w[i];
       const next = w[i + 1] || '';
       const next2 = w[i + 2] || '';
-      const next3 = w[i + 3] || '';
       const remaining = w.substring(i);
-      const atEnd = (i >= w.length - 1);
       const isLast = (pos) => pos >= w.length;
 
       // ---- Multi-character patterns (longest first) ----
