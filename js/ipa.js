@@ -861,8 +861,12 @@ const IpaConverter = (() => {
 
       // ---- Single characters ----
 
-      // Silent h
+      // h: silent in pronunciation, but keep at word start to prevent false elision
+      // (h aspiré words like "houx", "haut" block elision; h muet words use apostrophe: l'homme)
       if (c === 'h') {
+        if (i === 0) {
+          result += 'h';
+        }
         i += 1;
         continue;
       }
@@ -955,15 +959,20 @@ const IpaConverter = (() => {
         continue;
       }
       if (c === 'e') {
-        // final "e" or "es" or "ent" is usually silent
-        if ((isLast(i + 1)) ||
-            (next === 's' && isLast(i + 2)) ||
-            (remaining === 'ent' && w.length > 3)) {
-          const hasOtherVowel = [...w.substring(0, i)].some(ch => isVowel(ch));
-          if (!hasOtherVowel) {
+        // final "e" or "es": output ə for lyrics syllable counting
+        // final "ent" (3rd person plural): silent
+        if (remaining === 'ent' && w.length > 3) {
+          i = w.length;
+          continue;
+        }
+        if ((isLast(i + 1)) || (next === 's' && isLast(i + 2))) {
+          // Don't add ə if the previous sound is already a vowel (e.g. "-ées" = /e/, not /eə/)
+          const lastResultChar = result[result.length - 1];
+          const frResultVowels = 'aeɛəiɪoɔuʊyøœɑæɐ';
+          if (!lastResultChar || !frResultVowels.includes(lastResultChar)) {
             result += 'ə';
           }
-          i = w.length; // skip to end
+          i = w.length;
           continue;
         }
         // é
@@ -1782,6 +1791,16 @@ const IpaConverter = (() => {
         };
         const convert = converters[lang];
         if (convert) ipa = convert(clean);
+      }
+
+      // French: ensure final "e"/"es" words have trailing ə for syllable counting
+      if (ipa && lang === 'fr' && /e[s]?$/.test(clean)) {
+        const stripped = ipa.replace(/^\/|\/$/g, '');
+        const lastChar = stripped[stripped.length - 1];
+        const frVowels = 'aeɛəiɪoɔuʊyøœɑæɐ';
+        if (lastChar && !frVowels.includes(lastChar) && lastChar !== '̃') {
+          ipa = stripped + 'ə';
+        }
       }
 
       if (ipa) {

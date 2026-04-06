@@ -299,9 +299,20 @@ const LineManager = (() => {
       line.el.style.borderLeft = '';
     }
 
-    const syllables = countSyllables(fullIpa);
-    line.syllableCount.textContent = syllables;
-    line.syllableCount.title = syllables + ' syllable' + (syllables !== 1 ? 's' : '');
+    if (line.lang === 'fr') {
+      const { raw, elided } = countFrenchSyllables(line.ipaWords);
+      if (raw !== elided) {
+        line.syllableCount.textContent = elided + '~' + raw;
+        line.syllableCount.title = elided + ' syllables (with elision) / ' + raw + ' syllables (without elision)';
+      } else {
+        line.syllableCount.textContent = raw;
+        line.syllableCount.title = raw + ' syllable' + (raw !== 1 ? 's' : '');
+      }
+    } else {
+      const syllables = countSyllables(fullIpa);
+      line.syllableCount.textContent = syllables;
+      line.syllableCount.title = syllables + ' syllable' + (syllables !== 1 ? 's' : '');
+    }
   }
 
   const IPA_VOWELS = new Set([
@@ -310,6 +321,76 @@ const LineManager = (() => {
     '\u025D', '\u025A', '\u00F8', '\u0153', 'y', '\u0275', '\u0250',
     '\u0252', '\u026F', '\u0264', '\u025E', '\u025C', '\u0268', '\u0289',
   ]);
+
+  // French syllable counter: ə always starts a new syllable (never merges with adjacent vowels)
+  function countSyllablesFr(ipaStr) {
+    if (!ipaStr) return 0;
+    let count = 0;
+    let inVowel = false;
+    let prevWasSchwa = false;
+    for (const ch of ipaStr) {
+      if (IPA_VOWELS.has(ch)) {
+        if (ch === 'ə') {
+          // Schwa always starts a new syllable
+          count++;
+          inVowel = true;
+          prevWasSchwa = true;
+        } else if (!inVowel || prevWasSchwa) {
+          // New vowel cluster, or vowel after schwa = new syllable
+          count++;
+          inVowel = true;
+          prevWasSchwa = false;
+        } else {
+          // Continuing a vowel cluster (diphthong)
+          prevWasSchwa = false;
+        }
+      } else if (ch !== '\u0303' && ch !== '\u0300' && ch !== '\u0301') {
+        // Consonant (ignore combining marks)
+        inVowel = false;
+        prevWasSchwa = false;
+      }
+    }
+    return count;
+  }
+
+  // French syllable counting with elision rules:
+  // - Final ə is elided (not counted) before a word starting with a vowel sound
+  // - Final ə is elided at the end of the line
+  // Returns { raw, elided } — raw = all ə counted, elided = with elision applied
+  function countFrenchSyllables(ipaWords) {
+    if (!ipaWords || ipaWords.length === 0) return { raw: 0, elided: 0 };
+
+    let raw = 0;
+    let elided = 0;
+    for (let w = 0; w < ipaWords.length; w++) {
+      const ipa = ipaWords[w].ipa;
+      if (!ipa) continue;
+
+      const syllables = countSyllablesFr(ipa);
+      raw += syllables;
+
+      const endsWithSchwa = ipa.endsWith('ə');
+      if (endsWithSchwa) {
+        const isLastWord = (w === ipaWords.length - 1);
+        const nextIpa = !isLastWord ? ipaWords[w + 1]?.ipa : null;
+        const nextStartsWithVowel = nextIpa && IPA_VOWELS.has(nextIpa[0]);
+
+        if (isLastWord || nextStartsWithVowel) {
+          elided += syllables - 1;
+        } else {
+          elided += syllables;
+        }
+      } else {
+        elided += syllables;
+      }
+    }
+    // End-of-line: raw count also drops final ə
+    const lastIpa = ipaWords[ipaWords.length - 1]?.ipa;
+    if (lastIpa && lastIpa.endsWith('ə')) {
+      raw -= 1;
+    }
+    return { raw: Math.max(raw, 0), elided: Math.max(elided, 0) };
+  }
 
   function countSyllables(ipaStr) {
     if (!ipaStr) return 0;
