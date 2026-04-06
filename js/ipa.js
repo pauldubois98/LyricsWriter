@@ -8,9 +8,9 @@ const IpaConverter = (() => {
       i: 'aɪ', me: 'miː', my: 'maɪ', mine: 'maɪn', myself: 'maɪˈsɛlf',
       you: 'juː', your: 'jɔːɹ', yours: 'jɔːɹz', yourself: 'jɔːɹˈsɛlf',
       he: 'hiː', him: 'hɪm', his: 'hɪz', himself: 'hɪmˈsɛlf',
-      she: 'ʃiː', her: 'hɝː', hers: 'hɝːz', herself: 'hɝːˈsɛlf',
+      she: 'ʃiː', her: 'hɜɹː', hers: 'hɜɹːz', herself: 'hɜɹːˈsɛlf',
       it: 'ɪt', its: 'ɪts', itself: 'ɪtˈsɛlf',
-      we: 'wiː', us: 'ʌs', our: 'aʊɝ', ours: 'aʊɝz',
+      we: 'wiː', us: 'ʌs', our: 'aʊɜɹ', ours: 'aʊɜɹz',
       they: 'ðeɪ', them: 'ðɛm', their: 'ðɛɹ', theirs: 'ðɛɹz',
       this: 'ðɪs', that: 'ðæt', these: 'ðiːz', those: 'ðoʊz',
       who: 'huː', whom: 'huːm', whose: 'huːz',
@@ -19,9 +19,9 @@ const IpaConverter = (() => {
       a: 'ə', an: 'æn', the: 'ðə',
       some: 'sʌm', any: 'ˈɛni', no: 'noʊ', every: 'ˈɛvɹi',
       all: 'ɔːl', each: 'iːtʃ', both: 'boʊθ', few: 'fjuː', many: 'ˈmɛni',
-      much: 'mʌtʃ', more: 'mɔːɹ', most: 'moʊst', other: 'ˈʌðɝ',
+      much: 'mʌtʃ', more: 'mɔːɹ', most: 'moʊst', other: 'ˈʌðɜɹ',
       // Be
-      am: 'æm', is: 'ɪz', are: 'ɑːɹ', was: 'wʌz', were: 'wɝː',
+      am: 'æm', is: 'ɪz', are: 'ɑːɹ', was: 'wʌz', were: 'wɜɹː',
       be: 'biː', been: 'bɪn', being: 'ˈbiːɪŋ',
       // Have
       have: 'hæv', has: 'hæz', had: 'hæd', having: 'ˈhævɪŋ',
@@ -52,9 +52,9 @@ const IpaConverter = (() => {
       // Prepositions
       in: 'ɪn', on: 'ɑːn', at: 'æt', to: 'tuː', for: 'fɔːɹ',
       with: 'wɪð', from: 'fɹʌm', by: 'baɪ', up: 'ʌp', down: 'daʊn',
-      out: 'aʊt', off: 'ɔːf', over: 'ˈoʊvɝ', under: 'ˈʌndɝ',
+      out: 'aʊt', off: 'ɔːf', over: 'ˈoʊvɜɹ', under: 'ˈʌndɜɹ',
       into: 'ˈɪntuː', about: 'əˈbaʊt', through: 'θɹuː',
-      between: 'bɪˈtwiːn', after: 'ˈæftɝ', before: 'bɪˈfɔːɹ',
+      between: 'bɪˈtwiːn', after: 'ˈæftɜɹ', before: 'bɪˈfɔːɹ',
       against: 'əˈɡɛnst', around: 'əˈɹaʊnd', along: 'əˈlɔːŋ',
       // Conjunctions
       and: 'ænd', but: 'bʌt', or: 'ɔːɹ', nor: 'nɔːɹ',
@@ -63,7 +63,7 @@ const IpaConverter = (() => {
       // Adverbs
       not: 'nɑːt', just: 'dʒʌst', also: 'ˈɔːlsoʊ', very: 'ˈvɛɹi',
       too: 'tuː', here: 'hɪɹ', there: 'ðɛɹ', now: 'naʊ',
-      always: 'ˈɔːlweɪz', never: 'ˈnɛvɝ', only: 'ˈoʊnli',
+      always: 'ˈɔːlweɪz', never: 'ˈnɛvɜɹ', only: 'ˈoʊnli',
       still: 'stɪl', already: 'ɔːlˈɹɛdi', again: 'əˈɡɛn',
       away: 'əˈweɪ', back: 'bæk',
       // Contractions
@@ -71,7 +71,7 @@ const IpaConverter = (() => {
       "can't": 'kænt', "couldn't": 'ˈkʊdənt', "won't": 'woʊnt',
       "wouldn't": 'ˈwʊdənt', "shouldn't": 'ˈʃʊdənt',
       "isn't": 'ˈɪzənt', "aren't": 'ɑːɹnt', "wasn't": 'ˈwʌzənt',
-      "weren't": 'wɝːnt', "haven't": 'ˈhævənt', "hasn't": 'ˈhæzənt',
+      "weren't": 'wɜɹːnt', "haven't": 'ˈhævənt', "hasn't": 'ˈhæzənt',
       "i'm": 'aɪm', "i'll": 'aɪl', "i'd": 'aɪd', "i've": 'aɪv',
       "you're": 'jʊɹ', "you'll": 'juːl', "you'd": 'juːd', "you've": 'juːv',
       "he's": 'hiːz', "she's": 'ʃiːz', "it's": 'ɪts',
@@ -85,7 +85,7 @@ const IpaConverter = (() => {
       love: 'lʌv', life: 'laɪf', heart: 'hɑːɹt', soul: 'soʊl',
       eye: 'aɪ', eyes: 'aɪz', hand: 'hænd', hands: 'hændz',
       good: 'ɡʊd', bad: 'bæd', big: 'bɪɡ', little: 'ˈlɪtəl',
-      old: 'oʊld', new: 'njuː', long: 'lɔːŋ', last: 'læst', first: 'fɝːst',
+      old: 'oʊld', new: 'njuː', long: 'lɔːŋ', last: 'læst', first: 'fɜɹːst',
       // Lyrics-common words
       like: 'laɪk', baby: 'ˈbeɪbi', yeah: 'jɛə', oh: 'oʊ',
     },
@@ -1099,7 +1099,7 @@ const IpaConverter = (() => {
       }
       // -ture
       if (remaining.startsWith('ture') && isLast(i + 4)) {
-        result += 'tʃɝ';
+        result += 'tʃɜɹ';
         i += 4; continue;
       }
       // -ous
@@ -1325,7 +1325,7 @@ const IpaConverter = (() => {
       }
       // -er, -ir, -ur at end
       if ((remaining === 'er' || remaining === 'ir' || remaining === 'ur')) {
-        result += 'ɝ';
+        result += 'ɜɹ';
         i += 2; continue;
       }
 
@@ -1359,7 +1359,7 @@ const IpaConverter = (() => {
         }
         // e before r
         if (next === 'r' && (isLast(i + 2) || !isVowel(next2))) {
-          result += 'ɝ';
+          result += 'ɜɹ';
           i += 2; continue;
         }
         // magic-e: e_e = iː
@@ -1380,7 +1380,7 @@ const IpaConverter = (() => {
         }
         // i before r
         if (next === 'r' && (isLast(i + 2) || !isVowel(next2))) {
-          result += 'ɝ';
+          result += 'ɜɹ';
           i += 2; continue;
         }
         // i before nd, ld, gh = long i
@@ -1422,7 +1422,7 @@ const IpaConverter = (() => {
         }
         // u before r
         if (next === 'r' && (isLast(i + 2) || !isVowel(next2))) {
-          result += 'ɝ';
+          result += 'ɜɹ';
           i += 2; continue;
         }
         // u after certain consonants can be uː

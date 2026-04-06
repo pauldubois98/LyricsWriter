@@ -256,24 +256,21 @@ const LineManager = (() => {
     // Build the IPA string, then split the bold tail from the end
     let html;
     if (rhymeTail) {
-      // Find the tail in the full IPA (strip stress marks for matching)
-      const cleanFull = fullIpa.replace(/[ˈˌ]/g, '');
-      const tailPos = cleanFull.lastIndexOf(rhymeTail);
+      // Count from the end of the original IPA to find where the tail starts.
+      // Skip stress marks (ˈ ˌ) which are stripped in rhyme cleaning.
+      const tailCleanLen = rhymeTail.length;
+      let origBoldStart = fullIpa.length;
+      let cleanCount = 0;
+      for (let k = fullIpa.length - 1; k >= 0 && cleanCount < tailCleanLen; k--) {
+        const ch = fullIpa[k];
+        if (ch === 'ˈ' || ch === 'ˌ') continue;
+        cleanCount++;
+        origBoldStart = k;
+      }
 
-      if (tailPos !== -1) {
-        // Map position back to original string (with stress marks)
-        let origPos = 0;
-        let cleanIdx = 0;
-        while (cleanIdx < tailPos && origPos < fullIpa.length) {
-          if (fullIpa[origPos] === 'ˈ' || fullIpa[origPos] === 'ˌ') {
-            origPos++;
-          } else {
-            origPos++;
-            cleanIdx++;
-          }
-        }
-        const before = fullIpa.substring(0, origPos);
-        const bold = fullIpa.substring(origPos);
+      if (cleanCount >= tailCleanLen && origBoldStart < fullIpa.length) {
+        const before = fullIpa.substring(0, origBoldStart);
+        const bold = fullIpa.substring(origBoldStart);
         const style = rhymeColor ? ` style="color:${rhymeColor}"` : '';
         html = `/${escapeHtml(before)}<b class="rhyme-match"${style}>${escapeHtml(bold)}</b>/`;
       } else {
