@@ -32,86 +32,86 @@ const RhymeDetector = (() => {
     '#7986cb', // indigo
   ];
 
+  // Union-Find data structure
+  function makeUnionFind(n) {
+    const parent = Array.from({ length: n }, (_, i) => i);
+    const rank = new Array(n).fill(0);
+
+    function find(x) {
+      while (parent[x] !== x) {
+        parent[x] = parent[parent[x]];
+        x = parent[x];
+      }
+      return x;
+    }
+
+    function union(a, b) {
+      const ra = find(a);
+      const rb = find(b);
+      if (ra === rb) return;
+      if (rank[ra] < rank[rb]) { parent[ra] = rb; }
+      else if (rank[ra] > rank[rb]) { parent[rb] = ra; }
+      else { parent[rb] = ra; rank[ra]++; }
+    }
+
+    return { find, union };
+  }
+
   // Detect rhymes by comparing all pairs of lines.
-  // Groups lines that share common suffixes, assigns colors.
+  // Uses union-find to merge lines that share any common suffix.
   // Returns a Map<lineIndex, { tail, color }>
   function detectRhymes(lines) {
     const cleaned = lines.map((l) => cleanIpa(l.ipa));
 
-    // Build a pair map: for each pair (i,j), store the common suffix length
-    const pairs = [];
+    // Build edges: pairs with common suffix >= 1
+    const uf = makeUnionFind(lines.length);
+    const pairSuffix = []; // store suffix lengths for all pairs
+
     for (let i = 0; i < lines.length; i++) {
       if (!cleaned[i]) continue;
       for (let j = i + 1; j < lines.length; j++) {
         if (!cleaned[j]) continue;
         const len = longestCommonSuffix(cleaned[i], cleaned[j]);
         if (len >= 1) {
-          pairs.push({ i, j, len });
+          uf.union(i, j);
+          pairSuffix.push({ i, j, len });
         }
       }
     }
 
-    // Sort pairs by suffix length descending (prefer longer matches)
-    pairs.sort((a, b) => b.len - a.len);
-
-    // Group lines using union-find approach:
-    // Each line belongs to at most one group (defined by its best-matching partner).
-    // Lines with the same suffix tail get the same group.
-    const tailToGroup = new Map(); // tail string -> group id
-    const lineInfo = new Map(); // lineIndex -> { tail, groupId }
-    let nextGroup = 0;
-
-    for (const { i, j, len } of pairs) {
-      const tailI = cleaned[i].substring(cleaned[i].length - len);
-      const tailJ = cleaned[j].substring(cleaned[j].length - len);
-      // Both tails are the same by construction
-      const tail = tailI;
-
-      // Check if either line already has a longer or equal match
-      const existingI = lineInfo.get(i);
-      const existingJ = lineInfo.get(j);
-
-      // Only assign if this line doesn't have a match yet, or has the same tail
-      const canAssignI = !existingI || existingI.tail === tail;
-      const canAssignJ = !existingJ || existingJ.tail === tail;
-
-      if (!canAssignI && !canAssignJ) continue;
-
-      // Find or create a group for this tail
-      let groupId;
-      if (existingI && existingI.tail === tail) {
-        groupId = existingI.groupId;
-      } else if (existingJ && existingJ.tail === tail) {
-        groupId = existingJ.groupId;
-      } else if (tailToGroup.has(tail)) {
-        groupId = tailToGroup.get(tail);
-      } else {
-        groupId = nextGroup++;
-        tailToGroup.set(tail, groupId);
-      }
-
-      if (canAssignI && !existingI) {
-        lineInfo.set(i, { tail, groupId });
-      }
-      if (canAssignJ && !existingJ) {
-        lineInfo.set(j, { tail, groupId });
-      }
+    // Group lines by connected component
+    const components = new Map(); // root -> Set of indices
+    for (let i = 0; i < lines.length; i++) {
+      if (!cleaned[i]) continue;
+      const root = uf.find(i);
+      if (!components.has(root)) components.set(root, new Set());
+      components.get(root).add(i);
     }
 
-    // Filter: only keep groups with 2+ members
-    const groupCounts = new Map();
-    for (const [, info] of lineInfo) {
-      groupCounts.set(info.groupId, (groupCounts.get(info.groupId) || 0) + 1);
-    }
-
+    // For each component with 2+ members, find the longest suffix shared by ALL members
     const result = new Map();
-    for (const [idx, info] of lineInfo) {
-      if (groupCounts.get(info.groupId) >= 2) {
-        result.set(idx, {
-          tail: info.tail,
-          color: RHYME_COLORS[info.groupId % RHYME_COLORS.length],
-        });
+    let groupId = 0;
+
+    for (const [, members] of components) {
+      if (members.size < 2) continue;
+
+      const indices = [...members];
+
+      // Find longest suffix common to ALL members
+      let commonTail = cleaned[indices[0]];
+      for (let m = 1; m < indices.length; m++) {
+        const len = longestCommonSuffix(commonTail, cleaned[indices[m]]);
+        if (len === 0) { commonTail = ''; break; }
+        commonTail = commonTail.substring(commonTail.length - len);
       }
+
+      if (!commonTail) continue;
+
+      const color = RHYME_COLORS[groupId % RHYME_COLORS.length];
+      for (const idx of indices) {
+        result.set(idx, { tail: commonTail, color });
+      }
+      groupId++;
     }
 
     return result;
