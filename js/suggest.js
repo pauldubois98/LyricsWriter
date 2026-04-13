@@ -313,10 +313,27 @@ const RhymeSuggester = (() => {
   }
 
   // ── Full path: pre-built data + word embeddings ──────────────────────────
-  const _index = {};
+  const _index   = {};
+  const _loading = {};   // lang → Promise<bool>
 
   function _getData(lang) {
     return window[`WORD_DATA_${lang.toUpperCase()}`] || null;
+  }
+
+  // Lazily inject the data script for a language the first time it is needed.
+  // Resolves to true if the file loaded, false if it is missing.
+  function _loadData(lang) {
+    if (_getData(lang)) return Promise.resolve(true);
+    if (_loading[lang]) return _loading[lang];
+
+    _loading[lang] = new Promise((resolve) => {
+      const s = document.createElement('script');
+      s.src = `data/words_${lang}.js`;
+      s.onload  = () => resolve(true);
+      s.onerror = () => resolve(false);
+      document.head.appendChild(s);
+    });
+    return _loading[lang];
   }
 
   function _buildIndex(lang) {
@@ -414,6 +431,8 @@ const RhymeSuggester = (() => {
 
   // ── Public API ───────────────────────────────────────────────────────────
   async function getSuggestions(lineData, allLines) {
+    // Try to lazy-load the full data file first; fall back to the embedded list.
+    await _loadData(lineData.lang);
     const data = _getData(lineData.lang);
     if (data) return _fullSuggestions(lineData, allLines, data);
     return _fallbackSuggestions(lineData, allLines);

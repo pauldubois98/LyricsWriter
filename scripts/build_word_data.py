@@ -38,12 +38,13 @@ DATA_DIR = ROOT / "data"
 DATA_DIR.mkdir(exist_ok=True)
 
 # ── config ─────────────────────────────────────────────────────────────────
-N_STREAM   = 40_000   # words to read from vec file (most-frequent words come first)
-N_KEEP     = 7_000    # words to keep after filtering
+N_STREAM   = 130_000  # words to read from vec file (most-frequent words come first)
+N_KEEP     = 100_000  # words to keep after filtering
 EMBED_DIM  = 50       # final dimensions after PCA
 MIN_LEN    = 3
 MAX_LEN    = 20
-PHONEMIZER_BATCH = 400
+PHONEMIZER_BATCH = 2_000   # larger batches → fewer espeak subprocess spawns
+PHONEMIZER_JOBS  = 4       # parallel espeak workers
 
 LANGUAGES = {
     "en": {
@@ -198,7 +199,8 @@ def reduce_dims(vecs, n_components):
 def compute_ipa(words, ph_lang):
     """Batch IPA via phonemizer / espeak-ng."""
     from phonemizer import phonemize
-    print(f"  Computing IPA for {len(words)} words (lang={ph_lang}) …")
+    print(f"  Computing IPA for {len(words)} words (lang={ph_lang}, "
+          f"batch={PHONEMIZER_BATCH}, jobs={PHONEMIZER_JOBS}) …")
     ipa_all = []
     for start in range(0, len(words), PHONEMIZER_BATCH):
         batch = words[start : start + PHONEMIZER_BATCH]
@@ -209,6 +211,7 @@ def compute_ipa(words, ph_lang):
             with_stress=True,
             language_switch="remove-flags",
             preserve_punctuation=False,
+            njobs=PHONEMIZER_JOBS,
         )
         chunk = result if isinstance(result, list) else [result]
         ipa_all.extend(s.strip() for s in chunk)
