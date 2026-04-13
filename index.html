@@ -38,6 +38,13 @@
           <li><strong>IPA phonetics</strong> appear below each line, showing how the words are pronounced using the International Phonetic Alphabet.</li>
           <li><strong>Rhyme detection</strong> automatically finds lines that end with the same sounds. Matching endings are <strong>bolded</strong> and color-coded &mdash; lines sharing a rhyme get a colored left border.</li>
           <li><strong>Syllable count</strong> is shown as a small badge on each line.</li>
+          <li><strong>Rhyme suggestions</strong> &mdash; click the <strong>&#x2726;</strong> button on any line to get word suggestions. Each suggestion shows two scores:
+            <ul>
+              <li><strong style="color:#d4600a;">Rhyme score</strong> (orange number) &mdash; how many IPA sounds the word shares with the target from the end. For example, &ldquo;night&rdquo; and &ldquo;light&rdquo; share 3 sounds (/aɪt/).</li>
+              <li><strong style="color:#7c3aed;">Meaning score</strong> (purple %) &mdash; how semantically close the word is to the target, measured as cosine similarity between word embeddings (100k-word vocabulary). A high score means the words tend to appear in similar contexts.</li>
+            </ul>
+            The slider controls the balance between the two scores. The target word can be edited directly next to the slider.
+          </li>
           <li><strong>Drag &amp; drop</strong> lines using the <code>&equiv;</code> handle to reorder them.</li>
           <li><strong>Paste</strong> multiple lines at once &mdash; they are automatically split into separate lyric lines.</li>
           <li><strong>Undo / Redo</strong> with <kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Shift+Z</kbd> or the header buttons.</li>
