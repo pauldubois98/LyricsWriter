@@ -149,6 +149,12 @@ const LineManager = (() => {
     deleteBtn.title = 'Remove line';
     deleteBtn.addEventListener('click', () => removeLine(lineData));
 
+    // Suggest rhyme button
+    const suggestBtn = document.createElement('button');
+    suggestBtn.className = 'suggest-btn';
+    suggestBtn.textContent = '\u2726'; // ✦
+    suggestBtn.title = 'Suggest rhyming words for the next line';
+
     // IPA display
     const ipaDisplay = document.createElement('div');
     ipaDisplay.className = 'ipa-display';
@@ -157,16 +163,125 @@ const LineManager = (() => {
     const syllableCount = document.createElement('span');
     syllableCount.className = 'syllable-count';
 
+    // Suggest panel (shown below IPA display)
+    const suggestPanel = document.createElement('div');
+    suggestPanel.className = 'suggest-panel';
+    suggestPanel.hidden = true;
+
+    // Suggest button logic
+    let suggestLoading = false;
+
+    function renderSuggestPanel(suggestions) {
+      if (!suggestions) {
+        suggestPanel.innerHTML = '<div class="suggest-empty">No suggestions for this language yet.</div>';
+        return;
+      }
+      const { rich, thematic } = suggestions;
+      if (rich.length === 0 && thematic.length === 0) {
+        suggestPanel.innerHTML = '<div class="suggest-empty">No rhyming words found — try a longer line.</div>';
+        return;
+      }
+
+      function makeChips(words) {
+        return words.map((w) => {
+          const chip = document.createElement('button');
+          chip.className = 'suggest-chip';
+          chip.textContent = w;
+          chip.title = 'Copy to clipboard';
+          chip.addEventListener('click', () => {
+            navigator.clipboard.writeText(w).then(() => {
+              chip.classList.add('copied');
+              chip.textContent = '\u2713 ' + w;
+              setTimeout(() => {
+                chip.classList.remove('copied');
+                chip.textContent = w;
+              }, 1400);
+            });
+          });
+          return chip;
+        });
+      }
+
+      suggestPanel.innerHTML = '';
+
+      if (rich.length > 0) {
+        const sec = document.createElement('div');
+        sec.className = 'suggest-section';
+        const label = document.createElement('div');
+        label.className = 'suggest-label';
+        label.textContent = 'Rich rhymes';
+        const chips = document.createElement('div');
+        chips.className = 'suggest-chips';
+        makeChips(rich).forEach((c) => chips.appendChild(c));
+        sec.appendChild(label);
+        sec.appendChild(chips);
+        suggestPanel.appendChild(sec);
+      }
+
+      if (thematic.length > 0) {
+        const sec = document.createElement('div');
+        sec.className = 'suggest-section';
+        const label = document.createElement('div');
+        label.className = 'suggest-label';
+        label.textContent = 'Thematic';
+        const chips = document.createElement('div');
+        chips.className = 'suggest-chips';
+        makeChips(thematic).forEach((c) => chips.appendChild(c));
+        sec.appendChild(label);
+        sec.appendChild(chips);
+        suggestPanel.appendChild(sec);
+      }
+    }
+
+    suggestBtn.addEventListener('click', async () => {
+      // Toggle
+      if (!suggestPanel.hidden) {
+        suggestPanel.hidden = true;
+        suggestBtn.classList.remove('active');
+        return;
+      }
+      if (suggestLoading) return;
+
+      if (!lineData.text.trim()) {
+        suggestPanel.innerHTML = '<div class="suggest-empty">Type a lyric line first.</div>';
+        suggestPanel.hidden = false;
+        suggestBtn.classList.add('active');
+        return;
+      }
+
+      suggestLoading = true;
+      suggestBtn.classList.add('active');
+      suggestPanel.innerHTML = '<div class="suggest-loading">Finding rhymes\u2026</div>';
+      suggestPanel.hidden = false;
+
+      try {
+        // If IPA is not yet ready, wait briefly for it
+        let attempts = 0;
+        while (!lineData.ipa && attempts < 20) {
+          await new Promise((r) => setTimeout(r, 100));
+          attempts++;
+        }
+        const suggestions = await RhymeSuggester.getSuggestions(lineData, lines);
+        renderSuggestPanel(suggestions);
+      } catch (err) {
+        suggestPanel.innerHTML = `<div class="suggest-error">${err.message}</div>`;
+      } finally {
+        suggestLoading = false;
+      }
+    });
+
     const inputRow = document.createElement('div');
     inputRow.className = 'input-row';
     inputRow.appendChild(dragHandle);
     inputRow.appendChild(langSelect);
     inputRow.appendChild(input);
     inputRow.appendChild(syllableCount);
+    inputRow.appendChild(suggestBtn);
     inputRow.appendChild(deleteBtn);
 
     wrapper.appendChild(inputRow);
     wrapper.appendChild(ipaDisplay);
+    wrapper.appendChild(suggestPanel);
 
     lineData.el = wrapper;
     lineData.ipaDisplay = ipaDisplay;
