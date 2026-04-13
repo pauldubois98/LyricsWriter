@@ -168,73 +168,125 @@ const LineManager = (() => {
     suggestPanel.className = 'suggest-panel';
     suggestPanel.hidden = true;
 
-    // Suggest button logic
+    // Scored candidates cache — avoid re-scoring when only the slider moves
+    let scoredCache    = null;  // { candidates, hasEmbeddings }
+    let scoredForWord  = null;  // target word at scoring time (stale-check)
     let suggestLoading = false;
+    let targetDebounce = null;
 
-    function renderSuggestPanel(suggestions) {
-      if (!suggestions) {
-        suggestPanel.innerHTML = '<div class="suggest-empty">No suggestions for this language yet.</div>';
+    // ── slider row: [word input] · Rhyme [slider] Meaning ────────────────
+    const sliderRow = document.createElement('div');
+    sliderRow.className = 'suggest-slider-row';
+
+    const targetInput = document.createElement('input');
+    targetInput.type        = 'text';
+    targetInput.className   = 'suggest-target-input';
+    targetInput.spellcheck  = false;
+    targetInput.autocomplete = 'off';
+    targetInput.title       = 'Word to rhyme with';
+
+    const sliderSep = document.createElement('span');
+    sliderSep.className   = 'suggest-slider-sep';
+    sliderSep.textContent = '·';
+
+    const sliderLabelL = document.createElement('span');
+    sliderLabelL.className = 'suggest-slider-label';
+    sliderLabelL.textContent = 'Rhyme';
+
+    const slider = document.createElement('input');
+    slider.type      = 'range';
+    slider.className = 'suggest-slider';
+    slider.min       = '0';
+    slider.max       = '100';
+    slider.value     = '30';
+    slider.title     = 'Rhyme ← weight → Meaning';
+
+    const sliderLabelR = document.createElement('span');
+    sliderLabelR.className = 'suggest-slider-label';
+    sliderLabelR.textContent = 'Meaning';
+
+    sliderRow.appendChild(targetInput);
+    sliderRow.appendChild(sliderSep);
+    sliderRow.appendChild(sliderLabelL);
+    sliderRow.appendChild(slider);
+    sliderRow.appendChild(sliderLabelR);
+
+    // ── chips container ───────────────────────────────────────────────────
+    const chipsContainer = document.createElement('div');
+    chipsContainer.className = 'suggest-chips';
+
+    suggestPanel.appendChild(sliderRow);
+    suggestPanel.appendChild(chipsContainer);
+
+    // ── helpers ───────────────────────────────────────────────────────────
+    function renderChips(words) {
+      chipsContainer.innerHTML = '';
+      if (!words || words.length === 0) {
+        const msg = document.createElement('div');
+        msg.className = 'suggest-empty';
+        msg.textContent = 'No rhyming words found — try a longer line.';
+        chipsContainer.appendChild(msg);
         return;
       }
-      const { rich, thematic } = suggestions;
-      if (rich.length === 0 && thematic.length === 0) {
-        suggestPanel.innerHTML = '<div class="suggest-empty">No rhyming words found — try a longer line.</div>';
-        return;
-      }
-
-      function makeChips(words) {
-        return words.map((w) => {
-          const chip = document.createElement('button');
-          chip.className = 'suggest-chip';
-          chip.textContent = w;
-          chip.title = 'Copy to clipboard';
-          chip.addEventListener('click', () => {
-            navigator.clipboard.writeText(w).then(() => {
-              chip.classList.add('copied');
-              chip.textContent = '\u2713 ' + w;
-              setTimeout(() => {
-                chip.classList.remove('copied');
-                chip.textContent = w;
-              }, 1400);
-            });
+      for (const w of words) {
+        const chip = document.createElement('button');
+        chip.className = 'suggest-chip';
+        chip.textContent = w;
+        chip.title = 'Copy to clipboard';
+        chip.addEventListener('click', () => {
+          navigator.clipboard.writeText(w).then(() => {
+            chip.classList.add('copied');
+            chip.textContent = '\u2713 ' + w;
+            setTimeout(() => { chip.classList.remove('copied'); chip.textContent = w; }, 1400);
           });
-          return chip;
         });
-      }
-
-      suggestPanel.innerHTML = '';
-
-      if (rich.length > 0) {
-        const sec = document.createElement('div');
-        sec.className = 'suggest-section';
-        const label = document.createElement('div');
-        label.className = 'suggest-label';
-        label.textContent = 'Rich rhymes';
-        const chips = document.createElement('div');
-        chips.className = 'suggest-chips';
-        makeChips(rich).forEach((c) => chips.appendChild(c));
-        sec.appendChild(label);
-        sec.appendChild(chips);
-        suggestPanel.appendChild(sec);
-      }
-
-      if (thematic.length > 0) {
-        const sec = document.createElement('div');
-        sec.className = 'suggest-section';
-        const label = document.createElement('div');
-        label.className = 'suggest-label';
-        label.textContent = 'Thematic';
-        const chips = document.createElement('div');
-        chips.className = 'suggest-chips';
-        makeChips(thematic).forEach((c) => chips.appendChild(c));
-        sec.appendChild(label);
-        sec.appendChild(chips);
-        suggestPanel.appendChild(sec);
+        chipsContainer.appendChild(chip);
       }
     }
 
+    function showMessage(cls, text) {
+      chipsContainer.innerHTML = '';
+      const el = document.createElement('div');
+      el.className = cls;
+      el.textContent = text;
+      chipsContainer.appendChild(el);
+    }
+
+    function applySlider() {
+      if (!scoredCache) return;
+      renderChips(RhymeSuggester.rank(scoredCache.candidates, slider.value / 100));
+    }
+
+    async function rescore(word) {
+      showMessage('suggest-loading', 'Finding rhymes\u2026');
+      try {
+        scoredCache   = await RhymeSuggester.score(lineData, lines, word);
+        scoredForWord = word;
+        const noSem = !scoredCache.hasEmbeddings &&
+          scoredCache.candidates.every((c) => c.semNorm === 0);
+        sliderRow.querySelector('.suggest-slider').disabled = noSem;
+        sliderLabelL.style.opacity = noSem ? '0.4' : '';
+        sliderLabelR.style.opacity = noSem ? '0.4' : '';
+      } catch (err) {
+        showMessage('suggest-error', err.message);
+        return;
+      }
+      applySlider();
+    }
+
+    slider.addEventListener('input', applySlider);
+
+    // Re-score when the user edits the target word (debounced)
+    targetInput.addEventListener('input', () => {
+      clearTimeout(targetDebounce);
+      targetDebounce = setTimeout(() => {
+        const word = targetInput.value.trim();
+        if (word && word !== scoredForWord) rescore(word);
+      }, 400);
+    });
+
+    // ── open / close ──────────────────────────────────────────────────────
     suggestBtn.addEventListener('click', async () => {
-      // Toggle
       if (!suggestPanel.hidden) {
         suggestPanel.hidden = true;
         suggestBtn.classList.remove('active');
@@ -243,7 +295,7 @@ const LineManager = (() => {
       if (suggestLoading) return;
 
       if (!lineData.text.trim()) {
-        suggestPanel.innerHTML = '<div class="suggest-empty">Type a lyric line first.</div>';
+        showMessage('suggest-empty', 'Type a lyric line first.');
         suggestPanel.hidden = false;
         suggestBtn.classList.add('active');
         return;
@@ -251,23 +303,30 @@ const LineManager = (() => {
 
       suggestLoading = true;
       suggestBtn.classList.add('active');
-      suggestPanel.innerHTML = '<div class="suggest-loading">Finding rhymes\u2026</div>';
       suggestPanel.hidden = false;
 
-      try {
-        // If IPA is not yet ready, wait briefly for it
-        let attempts = 0;
-        while (!lineData.ipa && attempts < 20) {
-          await new Promise((r) => setTimeout(r, 100));
-          attempts++;
-        }
-        const suggestions = await RhymeSuggester.getSuggestions(lineData, lines);
-        renderSuggestPanel(suggestions);
-      } catch (err) {
-        suggestPanel.innerHTML = `<div class="suggest-error">${err.message}</div>`;
-      } finally {
-        suggestLoading = false;
+      // If IPA hasn't been computed yet, wait up to 2 s
+      let attempts = 0;
+      while (!lineData.ipa && attempts < 20) {
+        await new Promise((r) => setTimeout(r, 100));
+        attempts++;
       }
+
+      // Seed the target input with the last word of the line
+      const lastWord = lineData.text.trim().split(/\s+/).pop() || '';
+      if (targetInput.value !== lastWord) {
+        targetInput.value = lastWord;
+        scoredForWord = null; // force re-score
+      }
+
+      // Re-score only when the target word changed
+      if (!scoredCache || scoredForWord !== targetInput.value.trim()) {
+        await rescore(targetInput.value.trim());
+      } else {
+        applySlider();
+      }
+
+      suggestLoading = false;
     });
 
     const inputRow = document.createElement('div');
