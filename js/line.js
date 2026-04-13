@@ -190,7 +190,8 @@ const LineManager = (() => {
     sliderSep.textContent = '·';
 
     const sliderLabelL = document.createElement('span');
-    sliderLabelL.className = 'suggest-slider-label';
+    sliderLabelL.className   = 'suggest-slider-label';
+    sliderLabelL.style.color = '#d4600a';
     sliderLabelL.textContent = 'Rhyme';
 
     const slider = document.createElement('input');
@@ -202,7 +203,8 @@ const LineManager = (() => {
     slider.title     = 'Rhyme ← weight → Meaning';
 
     const sliderLabelR = document.createElement('span');
-    sliderLabelR.className = 'suggest-slider-label';
+    sliderLabelR.className   = 'suggest-slider-label';
+    sliderLabelR.style.color = '#7c3aed';
     sliderLabelR.textContent = 'Meaning';
 
     sliderRow.appendChild(targetInput);
@@ -219,25 +221,44 @@ const LineManager = (() => {
     suggestPanel.appendChild(chipsContainer);
 
     // ── helpers ───────────────────────────────────────────────────────────
-    function renderChips(words) {
+    function renderChips(ranked) {
       chipsContainer.innerHTML = '';
-      if (!words || words.length === 0) {
+      if (!ranked || ranked.length === 0) {
         const msg = document.createElement('div');
         msg.className = 'suggest-empty';
         msg.textContent = 'No rhyming words found — try a longer line.';
         chipsContainer.appendChild(msg);
         return;
       }
-      for (const w of words) {
+      for (const { word, rhymeRaw, semPct } of ranked) {
         const chip = document.createElement('button');
         chip.className = 'suggest-chip';
-        chip.textContent = w;
         chip.title = 'Copy to clipboard';
+
+        const wordSpan = document.createElement('span');
+        wordSpan.className = 'chip-word';
+        wordSpan.textContent = word;
+        chip.appendChild(wordSpan);
+
+        if (rhymeRaw > 0) {
+          const rs = document.createElement('span');
+          rs.className = 'chip-score chip-rhyme';
+          rs.textContent = rhymeRaw;
+          chip.appendChild(rs);
+        }
+
+        if (semPct > 0) {
+          const ss = document.createElement('span');
+          ss.className = 'chip-score chip-sem';
+          ss.textContent = semPct + '%';
+          chip.appendChild(ss);
+        }
+
         chip.addEventListener('click', () => {
-          navigator.clipboard.writeText(w).then(() => {
+          navigator.clipboard.writeText(word).then(() => {
             chip.classList.add('copied');
-            chip.textContent = '\u2713 ' + w;
-            setTimeout(() => { chip.classList.remove('copied'); chip.textContent = w; }, 1400);
+            wordSpan.textContent = '\u2713 ' + word;
+            setTimeout(() => { chip.classList.remove('copied'); wordSpan.textContent = word; }, 1400);
           });
         });
         chipsContainer.appendChild(chip);
@@ -262,9 +283,8 @@ const LineManager = (() => {
       try {
         scoredCache   = await RhymeSuggester.score(lineData, lines, word);
         scoredForWord = word;
-        const noSem = !scoredCache.hasEmbeddings &&
-          scoredCache.candidates.every((c) => c.semNorm === 0);
-        sliderRow.querySelector('.suggest-slider').disabled = noSem;
+        const noSem = scoredCache.candidates.every((c) => c.sem === 0);
+        // sliderRow.querySelector('.suggest-slider').disabled = noSem;
         sliderLabelL.style.opacity = noSem ? '0.4' : '';
         sliderLabelR.style.opacity = noSem ? '0.4' : '';
       } catch (err) {

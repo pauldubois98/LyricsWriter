@@ -226,9 +226,6 @@ body {
   color: var(--text);
 }
 
-.ipa-word {
-  /* normal ipa word */
-}
 
 .ipa-unknown {
   opacity: 0.5;
@@ -486,14 +483,35 @@ body {
 
 .suggest-chip:hover {
   border-color: var(--accent);
-  color: var(--accent);
   background: rgba(0, 113, 227, 0.06);
+}
+
+.suggest-chip:hover .chip-word {
+  color: var(--accent);
 }
 
 .suggest-chip.copied {
   border-color: #34c759;
-  color: #34c759;
   background: rgba(52, 199, 89, 0.08);
+}
+
+.suggest-chip.copied .chip-word {
+  color: #34c759;
+}
+
+.chip-score {
+  font-size: 0.68rem;
+  font-weight: 700;
+  margin-left: 0.3rem;
+  opacity: 0.8;
+}
+
+.chip-rhyme {
+  color: #d4600a;
+}
+
+.chip-sem {
+  color: #7c3aed;
 }
 
 .suggest-loading,
