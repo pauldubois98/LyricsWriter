@@ -34,7 +34,7 @@ sudo apt install espeak-ng   # or: brew install espeak-ng on macOS
 python scripts/build_word_data.py en fr es it
 ```
 
-This streams the top 100k words per language from FastText Wikipedia vectors, computes IPA via espeak-ng, reduces embeddings from 300d to 50d with PCA, and writes `data/words_{lang}.js` (~2 MB each). Without these files, suggestions still work using a built-in ~300-word fallback vocabulary, but meaning scores are unavailable.
+This streams the top 250k words per language from FastText Wikipedia vectors, computes IPA via espeak-ng, reduces embeddings from 300d to 50d with PCA, and writes `data/words_{lang}.js` (~23 MB each).
 
 ## Project Structure
 

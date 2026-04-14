@@ -7,6 +7,13 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" type="image/svg+xml" href="logo/LyricsWriter.svg">
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.min.js"
+          onload="renderMathInElement(document.body, {delimiters:[
+            {left:'$$',right:'$$',display:true},
+            {left:'$',right:'$',display:false}
+          ]})"></script>
   <style>
     /* ── Page layout ─────────────────────────────────────────────────────── */
     .tech-container {
@@ -105,7 +112,6 @@
       overflow-x: auto;
       text-align: center;
     }
-    .mermaid { display: inline-block; }
 
     /* ── Tables ──────────────────────────────────────────────────────────── */
     table {
@@ -128,6 +134,12 @@
       vertical-align: top;
     }
     tr:last-child td { border-bottom: none; }
+
+    /* ── KaTeX display math ──────────────────────────────────────────────── */
+    .katex-display {
+      margin: 0.75rem 0;
+      overflow-x: auto;
+    }
 
     /* ── Code / formula blocks ───────────────────────────────────────────── */
     .formula {
@@ -353,7 +365,7 @@ flowchart TD
         KEEP -->|"phonemizer + espeak-ng\nbatch=2000, jobs=4"| IPA["IPA strings"]
     end
     subgraph Output
-        B64 --> JS["data/words_{lang}.js\n~2 MB per language"]
+        B64 --> JS["data/words_{lang}.js\n~23 MB per language"]
         IPA --> JS
     end
         </div>
@@ -374,10 +386,13 @@ flowchart TD
         preserved variance. The PCA is fit on the full filtered vocabulary, so the 50 components capture
         the dominant semantic axes of the language.
       </p>
-      <div class="formula">300d  ──PCA──►  50d
-
-Benefits:   6× smaller file · faster browser computation · slight denoising
-Trade-off:  minor loss of semantic precision (negligible for top-N retrieval)</div>
+      <div class="diagram-wrap">
+        $$\mathbb{R}^{300} \xrightarrow{\;\text{PCA}\;} \mathbb{R}^{50}$$
+      </div>
+      <p style="font-size:0.88rem; color:var(--text-muted)">
+        Benefits: 6× smaller file · faster browser computation · slight denoising.<br>
+        Trade-off: minor loss of semantic precision (negligible for top-N retrieval).
+      </p>
 
       <h3>Int8 quantization</h3>
       <p>
@@ -385,10 +400,13 @@ Trade-off:  minor loss of semantic precision (negligible for top-N retrieval)</d
         signed bytes. Cosine similarity in int8 is nearly identical to float32 because the vectors were
         unit-normalised before scaling — quantisation error per dimension is ≤ 0.004, negligible over 50 dimensions.
       </p>
-      <div class="formula">float32  →  unit-normalise  →  × 127  →  round  →  int8
-
-Storage per word:  50 bytes  (vs 200 bytes for float32)
-Total for 250k:    12.5 MB raw  →  ~2 MB base64 JS file</div>
+      <div class="diagram-wrap">
+        $$\mathbf{v}_{\text{float32}} \;\longrightarrow\; \hat{\mathbf{v}} = \frac{\mathbf{v}}{\|\mathbf{v}\|} \;\longrightarrow\; \left\lfloor 127\,\hat{\mathbf{v}} \right\rceil_{\text{int8}}$$
+      </div>
+      <p style="font-size:0.88rem; color:var(--text-muted)">
+        Storage per word: $50$ bytes (vs $200$ bytes for float32) &mdash;
+        total for $250\text{k}$ words: $12.5\,\text{MB}$ int8 vectors $+$ words/IPA JSON $+$ base64 overhead $\approx 23\,\text{MB}$ per file.
+      </p>
 
       <h3>espeak-ng IPA</h3>
       <p>
@@ -501,14 +519,12 @@ Total for 250k:    12.5 MB raw  →  ~2 MB base64 JS file</div>
       </div>
 
       <h3>Step 3 — Normalisation</h3>
-      <div class="formula">raw_rhyme[i]  =  suffix_overlap(target_ipa, candidate_ipa[i])
-
-max_rhyme     =  max over all candidates
-
-rhyme[i]      =  raw_rhyme[i] / max_rhyme    ∈  [0, 1]
-
-→ The best-rhyming candidate always scores 1.0
-→ The displayed orange number is raw_rhyme[i] (before normalisation)</div>
+      <div class="diagram-wrap">
+        $$\text{rhyme}_i = \frac{\text{raw\_rhyme}_i}{\displaystyle\max_j(\text{raw\_rhyme}_j)} \in [0, 1]$$
+      </div>
+      <p style="font-size:0.88rem; color:var(--text-muted)">
+        The best-rhyming candidate always scores 1.0. The displayed <span class="badge-rhyme" style="font-size:0.75rem">orange number</span> is the raw count before normalisation.
+      </p>
     </section>
 
     <!-- ── Section 4: Meaning score ───────────────────────────────────── -->
@@ -521,19 +537,21 @@ rhyme[i]      =  raw_rhyme[i] / max_rhyme    ∈  [0, 1]
       </p>
 
       <h3>Cosine similarity</h3>
-      <div class="formula">             a · b
-cos(θ)  =  ──────────────
-            ‖a‖ × ‖b‖
-
-a  =  50d embedding of the target word
-b  =  50d embedding of the candidate word
-·  =  dot product
-‖‖ =  Euclidean norm
-
-Range: [−1, 1]
-  +1  →  same direction   (semantically very close)
-   0  →  orthogonal       (unrelated words)
-  −1  →  opposite         (contrasting contexts)</div>
+      <div class="diagram-wrap">
+        $$\cos(\theta) = \dfrac{\mathbf{a} \cdot \mathbf{b}}{\|\mathbf{a}\| \times \|\mathbf{b}\|}$$
+      </div>
+      <table style="margin-top:0">
+        <tr><th>Symbol</th><th>Meaning</th></tr>
+        <tr><td>$\mathbf{a}$</td><td>50d embedding of the target word</td></tr>
+        <tr><td>$\mathbf{b}$</td><td>50d embedding of the candidate word</td></tr>
+        <tr><td>$\mathbf{\theta}$</td><td>angle between $\mathbf{a}$ and $\mathbf{b}$</td></tr>
+      </table>
+      <table style="margin-top:0">
+        <tr><th>Value</th><th>Interpretation</th></tr>
+        <tr><td>$+1$</td><td>Same direction — semantically very close</td></tr>
+        <tr><td>$\phantom{+}0$</td><td>Orthogonal — unrelated words</td></tr>
+        <tr><td>$-1$</td><td>Opposite — contrasting contexts</td></tr>
+      </table>
 
       <h3>Geometric intuition</h3>
       <p>Word embeddings place semantically similar words at small angles from each other in vector space:</p>
@@ -562,43 +580,38 @@ Range: [−1, 1]
           <!-- Target: "fight" -->
           <line x1="190" y1="180" x2="310" y2="75" stroke="#0071e3" stroke-width="2" marker-end="url(#arrow-accent)"/>
           <text x="318" y="72" font-size="13" fill="#0071e3" font-weight="600">fight</text>
-          <text x="318" y="86" font-size="10" fill="#86868b">(target)</text>
+          <text x="318" y="86" font-size="10" fill="#0071e3">(target)</text>
 
           <!-- Close: "battle" -->
-          <line x1="190" y1="180" x2="340" y2="110" stroke="#d4600a" stroke-width="1.5" marker-end="url(#arrow-orange)"/>
-          <text x="348" y="114" font-size="12" fill="#d4600a" font-weight="500">battle</text>
-          <!-- Angle arc for battle -->
-          <path d="M 228 149 A 50 50 0 0 0 255 142" fill="none" stroke="#d4600a" stroke-width="1" stroke-dasharray="3,2"/>
-          <text x="240" y="143" font-size="9" fill="#d4600a">small θ</text>
+          <line x1="190" y1="180" x2="340" y2="110" stroke="#0ad460" stroke-width="1.5" marker-end="url(#arrow)"/>
+          <text x="348" y="114" font-size="12" fill="#0ad460" font-weight="500">battle</text>
 
           <!-- Medium: "struggle" -->
-          <line x1="190" y1="180" x2="360" y2="155" stroke="#86868b" stroke-width="1.5" marker-end="url(#arrow-muted)"/>
-          <text x="365" y="159" font-size="12" fill="#86868b">struggle</text>
+          <!-- <line x1="190" y1="180" x2="360" y2="155" stroke="#86868b" stroke-width="1.5" marker-end="url(#arrow-muted)"/>
+          <text x="365" y="159" font-size="12" fill="#86868b">struggle</text> -->
 
           <!-- Far: "apple" -->
-          <line x1="190" y1="180" x2="90" y2="90" stroke="#d2d2d7" stroke-width="1.5" marker-end="url(#arrow)"/>
-          <text x="58" y="86" font-size="12" fill="#d2d2d7">apple</text>
+          <line x1="190" y1="180" x2="90" y2="90" stroke="#d4600a" stroke-width="1.5" marker-end="url(#arrow)"/>
+          <text x="58" y="86" font-size="12" fill="#d4600a">apple</text>
 
           <!-- Far: "morning" -->
-          <line x1="190" y1="180" x2="60" y2="185" stroke="#d2d2d7" stroke-width="1.5" marker-end="url(#arrow)"/>
-          <text x="14" y="189" font-size="12" fill="#d2d2d7">morning</text>
+          <!-- <line x1="190" y1="180" x2="60" y2="185" stroke="#d2d2d7" stroke-width="1.5" marker-end="url(#arrow)"/>
+          <text x="14" y="189" font-size="12" fill="#d2d2d7">morning</text> -->
 
           <!-- Angle label for battle -->
-          <text x="130" y="260" font-size="11" fill="#86868b">Large angle = low similarity</text>
-          <text x="130" y="275" font-size="11" fill="#d4600a">Small angle = high similarity</text>
+          <text x="130" y="260" font-size="11" fill="#d4600a">Large angle = low similarity</text>
+          <text x="130" y="275" font-size="11" fill="#0ad460">Small angle = high similarity</text>
         </svg>
       </div>
 
       <h3>Normalisation</h3>
-      <div class="formula">raw_sem[i]  =  max(0,  cos(target_vec, candidate_vec[i]))
-              ↑ negative similarities clamped to 0
-
-max_sem     =  max over all candidates
-
-sem[i]      =  raw_sem[i] / max_sem     ∈  [0, 1]
-
-→ The most semantically similar candidate always scores 1.0 (= 100%)
-→ The displayed purple % is round(sem[i] × 100)</div>
+      <div class="diagram-wrap">
+        $$\text{sem}_i = \frac{\max\!\left(0,\; \cos(\mathbf{t},\, \mathbf{b}_i)\right)}{\displaystyle\max_j\!\left(\max(0,\cos(\mathbf{t},\mathbf{b}_j))\right)} \in [0, 1]$$
+      </div>
+      <p style="font-size:0.88rem; color:var(--text-muted)">
+        $\mathbf{t}$ is the target word's vector. Negative similarities are clamped to 0 before normalisation.
+        The displayed <span class="badge-sem" style="font-size:0.75rem">purple %</span> is $\text{round}(\text{sem}_i \times 100)$.
+      </p>
 
       <h3>Why cosine and not Euclidean distance?</h3>
       <p>
@@ -614,19 +627,7 @@ sem[i]      =  raw_sem[i] / max_sem     ∈  [0, 1]
 
       <h3>Score combination</h3>
       <div class="diagram-wrap">
-        <div class="mermaid">
-flowchart LR
-    R["rhyme\nnormalised suffix overlap\n∈ [0, 1]"]
-    S["sem\nnormalised cosine similarity\n∈ [0, 1]"]
-    W["w  (slider)\n0 = Rhyme · 1 = Meaning"]
-
-    R --> F["score = w × sem + (1−w) × rhyme"]
-    S --> F
-    W --> F
-
-    F --> SORT["Sort all candidates\n(rhyme as tiebreaker)"]
-    SORT --> TOP["Top 12 suggestions"]
-        </div>
+        $$\text{score}_i = \underbrace{w}_{\text{slider}} \cdot \underbrace{\text{sem}_i}_{\substack{\text{cosine similarity} \\ \in\,[0,1]}} \;+\; \underbrace{(1-w)}_{\text{slider}} \cdot \underbrace{\text{rhyme}_i}_{\substack{\text{suffix overlap} \\ \in\,[0,1]}} \qquad w \in [0,\,1]$$
       </div>
 
       <h3>Slider positions</h3>
@@ -644,49 +645,52 @@ flowchart LR
         Without this, whichever score has larger raw values would dominate at any slider position.
         With it, <em>w = 0.5 means genuinely equal influence</em>, regardless of the raw scale of each score.
       </p>
-      <div class="formula">Without independent normalisation:
-  raw_rhyme ∈ [0, 8],  raw_sem ∈ [0, 0.9]
-  → rhyme dominates even at w = 0.5
-
-With independent normalisation:
-  rhyme ∈ [0, 1],  sem ∈ [0, 1]
-  → w truly controls the balance</div>
     </section>
 
     <!-- ── Section 6: Complexity ───────────────────────────────────────── -->
     <section class="tech-section" id="complexity">
       <h2>6. Complexity</h2>
+      <p>$N = 250\,000$ words, $d = 50$ (embedding dim), $D = 300$ (original FastText dim).</p>
       <table>
-        <tr><th>Step</th><th>When</th><th>Cost</th></tr>
+        <tr><th>Step</th><th>When</th><th>Complexity</th><th>Typical execution time</th></tr>
         <tr>
-          <td>Build script</td>
-          <td>One-time, offline</td>
-          <td class="slow">~10 min per language (download + PCA + espeak-ng)</td>
+          <td><strong>Stream vectors</strong></td>
+          <td rowspan="3" style="vertical-align:middle;">One-time, offline</td>
+          <td>$\mathcal{O}(N \cdot D)$</td>
+          <td>~10 min<br><span style="font-size:0.8rem;color:var(--text-muted)">download ~270 MB from FastText</span></td>
         </tr>
         <tr>
-          <td>Data file load</td>
+          <td><strong>PCA</strong></td>
+          <td>$\mathcal{O}(N \cdot D^2)$</td>
+          <td>~10 min<br><span style="font-size:0.8rem;color:var(--text-muted)">SVD on $250\text{k} \times 300$ matrix</span></td>
+        </tr>
+        <tr>
+          <td><strong>espeak-ng IPA</strong></td>
+          <td>$\mathcal{O}(N)$</td>
+          <td>~10 min<br><span style="font-size:0.8rem;color:var(--text-muted)">125 batches × 4 parallel workers</span></td>
+        </tr>
+        <tr>
+          <td><strong>Data file load</strong></td>
           <td>First ✦ click per language</td>
-          <td>~200 ms — parse 2 MB JS + decode Int8Array</td>
+          <td>$\mathcal{O}(N)$</td>
+          <td>1–3 s<br><span style="font-size:0.8rem;color:var(--text-muted)">Parse 23 MB JS · <code>atob</code> on 16 MB base64 string · fill Int8Array of 12.5 M bytes · insert 250k entries into Map</span></td>
         </tr>
         <tr>
-          <td>Word index build</td>
-          <td>First call per language</td>
-          <td>~30 ms — build Map of 250k entries</td>
+          <td><strong>Score all candidates</strong></td>
+          <td>Target word changes</td>
+          <td>$\mathcal{O}(N \cdot d)$</td>
+          <td>~300 ms<br><span style="font-size:0.8rem;color:var(--text-muted)">250k × 50 multiply-adds (cosine) + 250k IPA suffix matches</span></td>
         </tr>
         <tr>
-          <td>Score all candidates</td>
-          <td>When target word changes</td>
-          <td>~50 ms — 250k × 50 dot products in JS</td>
-        </tr>
-        <tr>
-          <td>Re-rank (slider move)</td>
-          <td>Every slider interaction</td>
-          <td class="fast">&lt; 1 ms — sort already-scored candidates</td>
+          <td><strong>Re-rank</strong></td>
+          <td>Every slider move</td>
+          <td>$\mathcal{O}(N \log N)$</td>
+          <td>~30 ms<br><span style="font-size:0.8rem;color:var(--text-muted)">recompute weighted score + sort 250k candidates</span></td>
         </tr>
       </table>
-      <p>
-        Scoring results are cached: moving the slider re-ranks instantly without re-scoring.
-        Only changing the target word triggers a new scoring pass.
+      <p style="margin-top:0.75rem">
+        Scoring results are cached per target word — moving the slider only triggers a re-sort, not a re-score.
+        The dominant one-time cost is the data file load; all subsequent interactions reuse the same in-memory Int8Array.
       </p>
     </section>
 

@@ -9,7 +9,7 @@ For each language:
   3. Computes IPA using phonemizer + espeak-ng.
   4. Reduces embeddings 300 → EMBED_DIM with PCA.
   5. Unit-normalises and quantises to int8.
-  6. Writes  data/words_{lang}.js  (≈ 1-2 MB each).
+  6. Writes  data/words_{lang}.js  (≈ 23 MB each).
 
 Requirements
   pip install phonemizer numpy scikit-learn requests
