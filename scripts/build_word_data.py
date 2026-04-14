@@ -38,8 +38,8 @@ DATA_DIR = ROOT / "data"
 DATA_DIR.mkdir(exist_ok=True)
 
 # ── config ─────────────────────────────────────────────────────────────────
-N_STREAM   = 130_000  # words to read from vec file (most-frequent words come first)
-N_KEEP     = 100_000  # words to keep after filtering
+N_STREAM   = 300_000  # words to read from vec file (most-frequent words come first)
+N_KEEP     = 250_000  # words to keep after filtering
 EMBED_DIM  = 50       # final dimensions after PCA
 MIN_LEN    = 3
 MAX_LEN    = 20
