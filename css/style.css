@@ -72,6 +72,10 @@ body {
   cursor: default;
 }
 
+a.history-btn {
+  text-decoration: none;
+}
+
 .app-header h1 {
   font-size: 1.75rem;
   font-weight: 700;
